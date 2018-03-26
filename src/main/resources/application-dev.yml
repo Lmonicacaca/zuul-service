@@ -1,0 +1,35 @@
+server:
+  port: 9900
+
+zuul:
+  routes:
+    api-login:
+      path: /login/**
+      service-id: service-login
+
+  host:
+    socket-timeout-millis: 1000000
+    connect-timeout-millis: 1000000
+
+ribbon:
+  ConnectTimeout: 1000000
+  ReadTimeout: 1000000
+
+hystrix:
+  command:
+    default:
+      execution:
+        timeout:
+          enabled: false
+
+
+aes_key: iLrc3ty7xhPgztlOVy+CuRhyz5ajg8EVATD36vUVmIQ=
+encrypt: false
+
+token_exp: 3600000 #token 失效时间
+
+spring:
+  http:
+    multipart:
+      max-request-size: 100Mb
+      max-file-size: 100Mb

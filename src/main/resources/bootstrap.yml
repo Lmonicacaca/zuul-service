@@ -1,0 +1,22 @@
+
+eureka:
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+  client:
+    service-url:
+      defaultZone: http://eureka:eureka@47.100.18.6:9902/eureka/
+
+spring:
+  application:
+      name: zuul-service
+  cloud:
+    config:
+      profile: dev
+      label: master
+      uri: ${SPRING_CONFIG_URI:http://47.100.18.6:9901}
+
+
+
+
+
