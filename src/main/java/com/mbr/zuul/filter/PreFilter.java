@@ -16,7 +16,7 @@ import java.util.*;
 
 
 /**
- * 路由器前加密
+ * 路由器
  */
 @Component
 public class PreFilter extends ZuulFilter {
@@ -53,7 +53,7 @@ public class PreFilter extends ZuulFilter {
 
     private void setMsg( RequestContext ctx ,Map<String,Object> map){
         ctx.setSendZuulResponse(false);
-        ctx.setResponseStatusCode(500);// 返回错误码
+        ctx.setResponseStatusCode(401);// 返回错误码
         String json = JSONObject.toJSONString(map);
         HttpServletResponse response = ctx.getResponse();
         response.setHeader("content-type","application/json;charset=utf-8");

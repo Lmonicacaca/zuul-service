@@ -1,5 +1,9 @@
 server:
   port: 9900
+  tomcat:
+    accept-count: 1000
+    max-threads: 1000
+    max-connections: 1000
 
 zuul:
   routes:
@@ -10,6 +14,10 @@ zuul:
   host:
     socket-timeout-millis: 1000000
     connect-timeout-millis: 1000000
+    max-per-route-connections: 1000
+    max-total-connections: 1000
+  add-host-header: true
+
 
 ribbon:
   ConnectTimeout: 1000000
@@ -33,3 +41,16 @@ spring:
     multipart:
       max-request-size: 100Mb
       max-file-size: 100Mb
+  datasource:
+    url: jdbc:mysql://47.100.116.120:3306/dcpay?useUnicode=true&characterEncoding=utf-8
+    username: root
+    password: 1qaz2wsx
+    driver-class-name: com.mysql.jdbc.Driver
+logging:
+  level:
+    jdbc:
+      sqltiming: INFO
+      sqlonly: OFF
+      audit: OFF
+      connection: OFF
+      resultset: OFF
