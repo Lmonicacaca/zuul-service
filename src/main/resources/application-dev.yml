@@ -8,8 +8,9 @@ server:
 zuul:
   routes:
     api-login:
-      path: /login/**
-      service-id: service-login
+      path: /client/**
+      #service-id: client-service
+      url: http://localhost:9906/
 
   host:
     socket-timeout-millis: 1000000
@@ -31,26 +32,12 @@ hystrix:
           enabled: false
 
 
-aes_key: iLrc3ty7xhPgztlOVy+CuRhyz5ajg8EVATD36vUVmIQ=
-encrypt: false
+default_merchant: 10000000000000
 
-token_exp: 3600000 #token 失效时间
+token_exp: 600000 #token 失效时间
 
 spring:
   http:
     multipart:
       max-request-size: 100Mb
       max-file-size: 100Mb
-  datasource:
-    url: jdbc:mysql://47.100.116.120:3306/dcpay?useUnicode=true&characterEncoding=utf-8
-    username: root
-    password: 1qaz2wsx
-    driver-class-name: com.mysql.jdbc.Driver
-logging:
-  level:
-    jdbc:
-      sqltiming: INFO
-      sqlonly: OFF
-      audit: OFF
-      connection: OFF
-      resultset: OFF
