@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.*;
 
@@ -43,6 +44,8 @@ public class PreFilter extends ZuulFilter {
 
     @Value("${default_merchant}")
     private String default_merchant;
+
+    private String charset="UTF-8";
 
     @Autowired
     private MerchantInfoFeign merchantInfoFeign;
@@ -73,31 +76,31 @@ public class PreFilter extends ZuulFilter {
         //加密数据
         try {
             String aesKey = SecurityUtil.AesUtil.generaterKey();
-
             //加密数据
-
             String content = SecurityUtil.AesUtil.encrypt(json,aesKey);
             String key = "";
-            String sign = "";
+            //String sign = "";
             //查询平台私钥
             BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById(merchantInfoId);
             MerchantInfo info = merchantInfo.getData();
+            String defaultPrivateKey = "";
             if (info!=null){
                 //加密
-                key = SecurityUtil.RsaUtil.encrypt(aesKey,SecurityUtil.RsaUtil.getPrivateKey(info.getRsaPrivate()));
+                key = SecurityUtil.RsaUtil.encrypt(aesKey,SecurityUtil.RsaUtil.getPrivateKey(info.getRsaPrivate()),charset);
                 if (info.getId()==Long.parseLong(default_merchant)){
-                    sign = SecurityUtil.RsaUtil.sign(content+key,info.getRsaPrivate(),true);
+                    defaultPrivateKey = info.getRsaPrivate();
                 }else{//查询平台私钥
                     BaseFeignResult<MerchantInfo> defaultMerInfo = this.merchantInfoFeign.queryById(Long.parseLong(default_merchant));
                     if (defaultMerInfo.getData()!=null){
-                        sign = SecurityUtil.RsaUtil.sign(content+key,defaultMerInfo.getData().getRsaPrivate(),true);
+                        defaultPrivateKey = defaultMerInfo.getData().getRsaPrivate();
                     }
                 }
             }
+
             Map<String,Object> stringObjectMap = new HashMap<>();
-            stringObjectMap.put("content",content);
+            stringObjectMap.put("data",content);
             stringObjectMap.put("key",key);
-            stringObjectMap.put("sign",sign);
+            stringObjectMap.put("sign",sign(content,info.getId()+"",defaultPrivateKey));
             body = JSONObject.toJSONString(stringObjectMap);
         } catch (Exception e) {
             e.printStackTrace();
@@ -106,6 +109,20 @@ public class PreFilter extends ZuulFilter {
         ctx.setResponseBody(body);// 返回错误内容
         ctx.set("isSuccess", false);
         return null;
+    }
+
+
+    private String sign(String body,String merchantId,String privateKey) throws Exception{
+        Map<String,String> mapSign = new HashMap<>();
+      /*  mapSign.put("partner_no",merchantId);
+        mapSign.put("sign_type","RSA2");
+        mapSign.put("charset",charset);
+        mapSign.put("timestamp",new Date().getTime()+"");*/
+        mapSign.put("body",body);
+        String signString = CommonsUtil.putPairsSequenceAndTogether(mapSign);
+        String signBase64 = org.apache.commons.codec.binary.Base64.encodeBase64String(signString.getBytes());
+        String sign = SecurityUtil.RsaUtil.sign(signBase64,privateKey,true,charset);
+        return sign;
     }
 
 
@@ -132,9 +149,10 @@ public class PreFilter extends ZuulFilter {
         Map<String,Object> map = JSONObject.toJavaObject(JSON.parseObject(content),Map.class);
         String key = (String)map.get("key");
         try {
-            RSAPublicKey rsaPublicKey = SecurityUtil.RsaUtil.getPublicKey(shPublicKey);
+            PublicKey rsaPublicKey = SecurityUtil.RsaUtil.getPublicKey(shPublicKey);
             String aesKey = SecurityUtil.RsaUtil.decrypt(key,rsaPublicKey);
-            String data = SecurityUtil.AesUtil.decrypt(content,aesKey);
+            String  d = (String)map.get("data");
+            String data = SecurityUtil.AesUtil.decrypt(d,aesKey);
             logger.info("Ip地址->{};请求URL->{};请求内容->{}", CommonsUtil.getIpAddr(ctx.getRequest()),ctx.getRequest().getRequestURI(),data);
             setInputStream(data,ctx,merchantId);
             return  null;
@@ -176,18 +194,18 @@ public class PreFilter extends ZuulFilter {
 
         byte[] headerByte  = Base64.decodeBase64(header);
         String content = new String(headerByte);
-        String[] headerStr = content.split(".");
-        Long merchantId = Long.parseLong( headerStr[0]);
-        String sign = headerStr[1];
-        String signType = headerStr[2];
-        String charset = headerStr[3];
-        Long timestamp = Long.parseLong(headerStr[4]);
+        Map map = JSONObject.toJavaObject(JSON.parseObject(content),Map.class);
+        Long merchantId = Long.parseLong(map.get("partner_no").toString());
+        String sign = (String)map.get("sign");
+        String signType = (String)map.get("sign_type");
+        String charset = (String)map.get("charset");
+        Long timestamp = Long.parseLong(map.get("timestamp").toString());
         boolean b = verifyTimeOut(timestamp);
         if (!b){
-            Map<String,Object> map = new HashMap<>();
-            map.put("code","500");
-            map.put("msg","url 超时");
-            return this.setMsg(ctx,map,merchantId);
+            Map<String,Object> mapError = new HashMap<>();
+            mapError.put("code","500");
+            mapError.put("msg","url 超时");
+            return this.setMsg(ctx,mapError,merchantId);
         }
         return verifySign(merchantId,sign,signType,charset,timestamp,ctx,body);
     }
@@ -233,19 +251,30 @@ public class PreFilter extends ZuulFilter {
          BaseFeignResult<MerchantInfo> baseFeignResult = this.merchantInfoFeign.queryById(merchantId);
          if (baseFeignResult.getData()!=null) {
              MerchantInfo merchantInfo = baseFeignResult.getData();
-             String head = merchantId+signType+charset+timestamp;
+
              boolean b =false;
+             Map mapBody = JSONObject.toJavaObject(JSON.parseObject(body),Map.class);
+
+             Map<String,String> mapSign = new HashMap<>();
+             mapSign.put("partner_no",merchantInfo.getId()+"");
+             mapSign.put("sign_type",signType);
+             mapSign.put("charset",charset);
+             mapSign.put("timestamp",timestamp+"");
+             mapSign.put("body",mapBody.get("data").toString());
+             String signString = CommonsUtil.putPairsSequenceAndTogether(mapSign);
+             String signBase64 = org.apache.commons.codec.binary.Base64.encodeBase64String(signString.getBytes());
+
              if (signType.equals("RSA2")) {
-                 String signContent = body + Base64.encodeBase64String(head.getBytes());
+
                  try {
-                     b = SecurityUtil.RsaUtil.verify(signContent,sign,merchantInfo.getRsaPublic(),true);
+                     b = SecurityUtil.RsaUtil.verify(signBase64,sign,merchantInfo.getRsaPublic(),true,charset);
                  } catch (Exception e) {
                      e.printStackTrace();
                  }
              }else if (signType.equals("RSA")){
-                 String signContent = body + Base64.encodeBase64String(head.getBytes());
+
                  try {
-                    b = SecurityUtil.RsaUtil.verify(signContent,sign,merchantInfo.getRsaPublic(),false);
+                    b = SecurityUtil.RsaUtil.verify(signBase64,sign,merchantInfo.getRsaPublic(),false,charset);
                  } catch (Exception e) {
                      e.printStackTrace();
                  }

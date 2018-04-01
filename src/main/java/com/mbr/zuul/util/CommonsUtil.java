@@ -7,9 +7,7 @@ import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 import javax.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class CommonsUtil {
 
@@ -81,5 +79,30 @@ public class CommonsUtil {
             }
         }
         return  list;
+    }
+
+
+    public static String putPairsSequenceAndTogether(Map<String, String> info) {
+
+        List<Map.Entry<String, String>> infoIds = new ArrayList<Map.Entry<String, String>>(info.entrySet());
+        Collections.sort(infoIds, new Comparator<Map.Entry<String, String>>() {
+            @Override
+            public int compare(Map.Entry<String, String> arg0, Map.Entry<String, String> arg1) {
+                // TODO Auto-generated method stub
+                return (arg0.getKey()).compareTo(arg1.getKey());
+            }
+        });
+        String ret = "";
+
+        for (Map.Entry<String, String> entry : infoIds) {
+
+            ret += entry.getKey();
+            ret += "=";
+            ret += entry.getValue();
+            ret += "&";
+        }
+        ret = ret.substring(0, ret.length() - 1);
+
+        return ret;
     }
 }
