@@ -82,7 +82,7 @@ public class PostFilter  extends ZuulFilter {
                 String body = "";
                 //加密数据
                 try {
-                    String aesKey = SecurityUtil.AesUtil.generaterKey();
+                    byte[] aesKey = SecurityUtil.AesUtil.generaterKey();
 
                     //加密数据
 
@@ -96,7 +96,7 @@ public class PostFilter  extends ZuulFilter {
                     String defaultPrivateKey = "";
                     if (info!=null){
                         //加密
-                        key = SecurityUtil.RsaUtil.encrypt(aesKey,SecurityUtil.RsaUtil.getPrivateKey(info.getRsaPrivate()),charset);
+                        key = SecurityUtil.RsaUtil.encrypt(new String(aesKey),SecurityUtil.RsaUtil.getPrivateKey(info.getRsaPrivate()),charset);
                         if (info.getId()==Long.parseLong(default_merchant)){
                             defaultPrivateKey = info.getRsaPrivate();
                         }else{//查询平台私钥
@@ -136,8 +136,8 @@ public class PostFilter  extends ZuulFilter {
         mapSign.put("timestamp",new Date().getTime()+"");*/
         mapSign.put("body",body);
         String signString = CommonsUtil.putPairsSequenceAndTogether(mapSign);
-        String signBase64 = org.apache.commons.codec.binary.Base64.encodeBase64String(signString.getBytes());
-        String sign = SecurityUtil.RsaUtil.sign(signBase64,privateKey,true,charset);
+        //String signBase64 = org.apache.commons.codec.binary.Base64.encodeBase64String(signString.getBytes());
+        String sign = SecurityUtil.RsaUtil.sign(signString,privateKey,true,charset);
         return sign;
     }
 }

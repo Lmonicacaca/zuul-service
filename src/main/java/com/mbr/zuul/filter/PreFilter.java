@@ -75,7 +75,7 @@ public class PreFilter extends ZuulFilter {
         String body = "";
         //加密数据
         try {
-            String aesKey = SecurityUtil.AesUtil.generaterKey();
+            byte[] aesKey = SecurityUtil.AesUtil.generaterKey();
             //加密数据
             String content = SecurityUtil.AesUtil.encrypt(json,aesKey);
             String key = "";
@@ -86,7 +86,7 @@ public class PreFilter extends ZuulFilter {
             String defaultPrivateKey = "";
             if (info!=null){
                 //加密
-                key = SecurityUtil.RsaUtil.encrypt(aesKey,SecurityUtil.RsaUtil.getPrivateKey(info.getRsaPrivate()),charset);
+                key = SecurityUtil.RsaUtil.encrypt(new String(aesKey),SecurityUtil.RsaUtil.getPrivateKey(info.getRsaPrivate()),charset);
                 if (info.getId()==Long.parseLong(default_merchant)){
                     defaultPrivateKey = info.getRsaPrivate();
                 }else{//查询平台私钥
@@ -100,7 +100,7 @@ public class PreFilter extends ZuulFilter {
             Map<String,Object> stringObjectMap = new HashMap<>();
             stringObjectMap.put("data",content);
             stringObjectMap.put("key",key);
-            stringObjectMap.put("sign",sign(content,info.getId()+"",defaultPrivateKey));
+            stringObjectMap.put("sign",sign(content,defaultPrivateKey));
             body = JSONObject.toJSONString(stringObjectMap);
         } catch (Exception e) {
             e.printStackTrace();
@@ -112,7 +112,7 @@ public class PreFilter extends ZuulFilter {
     }
 
 
-    private String sign(String body,String merchantId,String privateKey) throws Exception{
+    private String sign(String body,String privateKey) throws Exception{
         Map<String,String> mapSign = new HashMap<>();
       /*  mapSign.put("partner_no",merchantId);
         mapSign.put("sign_type","RSA2");
@@ -120,8 +120,8 @@ public class PreFilter extends ZuulFilter {
         mapSign.put("timestamp",new Date().getTime()+"");*/
         mapSign.put("body",body);
         String signString = CommonsUtil.putPairsSequenceAndTogether(mapSign);
-        String signBase64 = org.apache.commons.codec.binary.Base64.encodeBase64String(signString.getBytes());
-        String sign = SecurityUtil.RsaUtil.sign(signBase64,privateKey,true,charset);
+        //String signBase64 = org.apache.commons.codec.binary.Base64.encodeBase64String(signString.getBytes());
+        String sign = SecurityUtil.RsaUtil.sign(signString,privateKey,true,charset);
         return sign;
     }
 
@@ -262,19 +262,19 @@ public class PreFilter extends ZuulFilter {
              mapSign.put("timestamp",timestamp+"");
              mapSign.put("body",mapBody.get("data").toString());
              String signString = CommonsUtil.putPairsSequenceAndTogether(mapSign);
-             String signBase64 = org.apache.commons.codec.binary.Base64.encodeBase64String(signString.getBytes());
+             //String signBase64 = org.apache.commons.codec.binary.Base64.encodeBase64String(signString.getBytes());
 
              if (signType.equals("RSA2")) {
 
                  try {
-                     b = SecurityUtil.RsaUtil.verify(signBase64,sign,merchantInfo.getRsaPublic(),true,charset);
+                     b = SecurityUtil.RsaUtil.verify(signString,sign,merchantInfo.getRsaPublic(),true,charset);
                  } catch (Exception e) {
                      e.printStackTrace();
                  }
              }else if (signType.equals("RSA")){
 
                  try {
-                    b = SecurityUtil.RsaUtil.verify(signBase64,sign,merchantInfo.getRsaPublic(),false,charset);
+                    b = SecurityUtil.RsaUtil.verify(signString,sign,merchantInfo.getRsaPublic(),false,charset);
                  } catch (Exception e) {
                      e.printStackTrace();
                  }
