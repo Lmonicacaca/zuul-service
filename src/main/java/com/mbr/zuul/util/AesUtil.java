@@ -148,7 +148,7 @@ public class AesUtil {
         return secretKey;
     }
 
-    public static byte[] generateAESSecretIv(){
+    private static byte[] generateAESSecretIv(){
         StringBuffer stringBuffer = new StringBuffer();
 
         for (int i = 0;i<16;i++){
