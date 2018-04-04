@@ -2,7 +2,10 @@ package com.mbr.zuul.util;
 
 
 import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.io.FileUtils;
 
+
+import java.io.File;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -27,38 +30,40 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import static com.mbr.zuul.util.SecurityUtil.RsaUtil.generatorKeyPair;
+
+
 public class SecurityUtil {
 
     public static void main(String args[]){
-       // Long time = new Date().getTime();
-
-        /*try {
-            RsaUtil.RsaKeyPair ra = RsaUtil.generaterKeyPair();
-            System.out.println(ra.getPrivateKey());
-            System.out.println(ra.publicKey);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }*/
-
-
+       /*// Long time = new Date().getTime();
         String partner_no = "10000000000000";
 
         String signType = "RSA2";
         String charset= "UTF-8";
         String timestamp = "1522547768902";
         System.out.println(timestamp);
-        String aesKey = "iLrc3ty7xhPgztlOVy+CuRhyz5ajg8EVATD36vUVmIQ=";
-       // String pubKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgUtjUwQCpo5c49BHhU+k+DU5XYA5Ww9+Jeql9J4IzvHoW1ChX2tDiBPwB+pJbrUE9EEw+jEuj9QQIKyQwBbYpyoNh0uJMsGJJRcuIJYEsznw4wzvU/" +
+        byte[] aesKey = null;
+        try {
+            aesKey = AesUtil.generaterKey();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        // String pubKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgUtjUwQCpo5c49BHhU+k+DU5XYA5Ww9+Jeql9J4IzvHoW1ChX2tDiBPwB+pJbrUE9EEw+jEuj9QQIKyQwBbYpyoNh0uJMsGJJRcuIJYEsznw4wzvU/" +
         //        "q9U0OcYJfQ9Qu5xQ3dH2yk1CS4v2Ai1v+wngZ1t4hcvKW2Ccbyh4SGxVQHhOCC4JchFHgmsRsytjIzZHxOGMvzhRy2fjHcYMyGNpgqHBMHx4sTtIdrKZ52MQ+A/Vjj3iznXbLNRxz5PtFO/" +
          //       "c2iX8l6FbYj6iMXmcUZlUv08g7H1+hLObVHbDBLML/" +
           //      "DkwQwpxz26f9S6jgR7XBBD31+tc5Vlede7cYWDLmx9QIDAQAB";
         String priKey = "MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCBS2NTBAKmjlzj0EeFT6T4NTldgDlbD34l6qX0ngjO8ehbUKFfa0OIE/AH6klutQT0QTD6MS6P1BAgrJDAFtinKg2HS4kywYklFy4glgSzOfDjDO9T+r1TQ5xgl9D1C7nFDd0fbKTUJLi/YCLW/7CeBnW3iFy8pbYJxvKHhIbFVAeE4ILglyEUeCaxGzK2MjNkfE4Yy/OFHLZ+MdxgzIY2mCocEwfHixO0h2spnnYxD4D9WOPeLOddss1HHPk+0U79zaJfyXoVtiPqIxeZxRmVS/TyDsfX6Es5tUdsMEswv8OTBDCnHPbp/1LqOBHtcEEPfX61zlWV517txhYMubH1AgMBAAECggEAJp7WNF3mTMoJhSMZugBoTpvXXs6GU2T1UW4d1EvAZdBsj5ouGcp4iZUrBbI97Qu1RyCR+KnoNp4pkxj4w+gPHx+4msk9WiPlS2b5KFKnZMHR6oBanMMw+kYf19qBWDEAdJQHkPNq6NNvO/sDbSVDJHDZiND6on79OT5sA37aouZgYC4yfpkKWM7MhREgmEzpk5xbRgIR48/Rp/Dv67N92VLwy/Zim38ED/Hic9xCSdnQSwDKyZ36uUumKCC2bEQlQA5f0koIpPc1TO6+U+278GCT839GQ0Ni2ZxfB1u33eHH8aX2NUiM0U9rlXlviB/o/RpcVhf4D/zlXif8lS/aAQKBgQDYl7JjBHvPGJn70SG3Rg1PvS3XRpzC9hnynAdn1w1Z803HwBfQ54SuQu/FaaGpHMqwEaVBtiAvU77+MqiIs48rsrTPN209M6F397Rf3zm9Nnt7YkwRllPbGJgYleUPbzAYnD5gH0Cf5mgP8kfxCeSujhyCAq8g00Mdlm4y8k4YMQKBgQCY0ZRn4Po/psxq2bptnB3ALmUuSjc/INNoCDZ885NRVtgCVZw9cQERB9m8ECREKLhkDhtWsgfZhq2eEb/jWW04edBTg+BvvZIu+qT4xB25FiaEzpgBO+iuGjgqf70sJaizLxWj0QE+FzQf24VaTb1bGNJfxFPaXvsEn3Wq2xGJBQKBgFsrL1lij8LSdi57DxgYEo5X8S3GeUHPWYi3iJ569RHByiGkh+HVMhIv9sE//14x0ldedhM82DtTovdY13wDKOaZ6GW4zPCQBQ18ZJ5eVe2BO2TqMV7NyipVJeBjZ/GhObuCOPc48HjeATuFHiclpO6cvv8ypgjJJF0V7vje6WRhAoGAUrTSuenD5mESrx2JTTs5ysIRVp0qC0trvxj6zGNTLqlunMzSk1oudpYmHCcsSYs0SEpuN1yA7RR7sFnw3U2P1AnxWtG7zR3vGOfkExKo93vqeuQI1lojEt7z2ORrcJItHFT2REOghYcvWbKIGJiMS9pCOTxbGYtgFV9r4n1PnzUCgYBgnO51b7UkJasj7SaRRskCY+QWqB8kiPiJTsipS9sGCPBojtJmXzMC/+n4cvmXmymRm+G9hcFYEZbI1hm6v1SQkA2A4VMQ3oTEgNwPydgBe/MguBjtlMaytKE8jrG30FjtD+bJo5DrHhs6qG6xkc81dQuVzVtWURVDUrDErW8N9g==";
         Map<String,Object> mapContent = new HashMap<>();
-        mapContent.put("aa","bb");
+        mapContent.put("content","消息类了");
+        mapContent.put("deviceId","123434");
+        mapContent.put("isRead","UNREAD");
+        mapContent.put("pushId","324234234");
+        mapContent.put("type","NOTIFY");
         try {
             String body = JSONObject.toJSONString(mapContent);
             String mwAes = AesUtil.encrypt(body,aesKey);
-            String key = RsaUtil.encrypt(aesKey,RsaUtil.getPrivateKey(priKey),charset);
+            String key = RsaUtil.encrypt(Base64.getEncoder().encodeToString(aesKey) ,RsaUtil.getPrivateKey(priKey),charset);
 
             Map<String,String> mapSign = new HashMap<>();
             mapSign.put("partner_no",partner_no);
@@ -69,10 +74,11 @@ public class SecurityUtil {
 
 
             String signString = CommonsUtil.putPairsSequenceAndTogether(mapSign);
+            System.out.println("排序："+signString);
             //String signBase64 = org.apache.commons.codec.binary.Base64.encodeBase64String(signString.getBytes());
 
             String sign = RsaUtil.sign(signString,priKey,true,charset);
-
+            System.out.println("sign:"+sign);
             Map<String,Object> mapC = new HashMap<>();
             mapC.put("data",mwAes);
             mapC.put("key",key);
@@ -92,8 +98,27 @@ public class SecurityUtil {
 
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        }*/
 
+        try {
+
+//             String pubKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgUtjUwQCpo5c49BHhU+k+DU5XYA5Ww9+Jeql9J4IzvHoW1ChX2tDiBPwB+pJbrUE9EEw+jEuj9QQIKyQwBbYpyoNh0uJMsGJJRcuIJYEsznw4wzvU/" +
+//                    "q9U0OcYJfQ9Qu5xQ3dH2yk1CS4v2Ai1v+wngZ1t4hcvKW2Ccbyh4SGxVQHhOCC4JchFHgmsRsytjIzZHxOGMvzhRy2fjHcYMyGNpgqHBMHx4sTtIdrKZ52MQ+A/Vjj3iznXbLNRxz5PtFO/" +
+//                   "c2iX8l6FbYj6iMXmcUZlUv08g7H1+hLObVHbDBLML/" +
+//                  "DkwQwpxz26f9S6jgR7XBBD31+tc5Vlede7cYWDLmx9QIDAQAB";
+//            String priKey = "MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCBS2NTBAKmjlzj0EeFT6T4NTldgDlbD34l6qX0ngjO8ehbUKFfa0OIE/AH6klutQT0QTD6MS6P1BAgrJDAFtinKg2HS4kywYklFy4glgSzOfDjDO9T+r1TQ5xgl9D1C7nFDd0fbKTUJLi/YCLW/7CeBnW3iFy8pbYJxvKHhIbFVAeE4ILglyEUeCaxGzK2MjNkfE4Yy/OFHLZ+MdxgzIY2mCocEwfHixO0h2spnnYxD4D9WOPeLOddss1HHPk+0U79zaJfyXoVtiPqIxeZxRmVS/TyDsfX6Es5tUdsMEswv8OTBDCnHPbp/1LqOBHtcEEPfX61zlWV517txhYMubH1AgMBAAECggEAJp7WNF3mTMoJhSMZugBoTpvXXs6GU2T1UW4d1EvAZdBsj5ouGcp4iZUrBbI97Qu1RyCR+KnoNp4pkxj4w+gPHx+4msk9WiPlS2b5KFKnZMHR6oBanMMw+kYf19qBWDEAdJQHkPNq6NNvO/sDbSVDJHDZiND6on79OT5sA37aouZgYC4yfpkKWM7MhREgmEzpk5xbRgIR48/Rp/Dv67N92VLwy/Zim38ED/Hic9xCSdnQSwDKyZ36uUumKCC2bEQlQA5f0koIpPc1TO6+U+278GCT839GQ0Ni2ZxfB1u33eHH8aX2NUiM0U9rlXlviB/o/RpcVhf4D/zlXif8lS/aAQKBgQDYl7JjBHvPGJn70SG3Rg1PvS3XRpzC9hnynAdn1w1Z803HwBfQ54SuQu/FaaGpHMqwEaVBtiAvU77+MqiIs48rsrTPN209M6F397Rf3zm9Nnt7YkwRllPbGJgYleUPbzAYnD5gH0Cf5mgP8kfxCeSujhyCAq8g00Mdlm4y8k4YMQKBgQCY0ZRn4Po/psxq2bptnB3ALmUuSjc/INNoCDZ885NRVtgCVZw9cQERB9m8ECREKLhkDhtWsgfZhq2eEb/jWW04edBTg+BvvZIu+qT4xB25FiaEzpgBO+iuGjgqf70sJaizLxWj0QE+FzQf24VaTb1bGNJfxFPaXvsEn3Wq2xGJBQKBgFsrL1lij8LSdi57DxgYEo5X8S3GeUHPWYi3iJ569RHByiGkh+HVMhIv9sE//14x0ldedhM82DtTovdY13wDKOaZ6GW4zPCQBQ18ZJ5eVe2BO2TqMV7NyipVJeBjZ/GhObuCOPc48HjeATuFHiclpO6cvv8ypgjJJF0V7vje6WRhAoGAUrTSuenD5mESrx2JTTs5ysIRVp0qC0trvxj6zGNTLqlunMzSk1oudpYmHCcsSYs0SEpuN1yA7RR7sFnw3U2P1AnxWtG7zR3vGOfkExKo93vqeuQI1lojEt7z2ORrcJItHFT2REOghYcvWbKIGJiMS9pCOTxbGYtgFV9r4n1PnzUCgYBgnO51b7UkJasj7SaRRskCY+QWqB8kiPiJTsipS9sGCPBojtJmXzMC/+n4cvmXmymRm+G9hcFYEZbI1hm6v1SQkA2A4VMQ3oTEgNwPydgBe/MguBjtlMaytKE8jrG30FjtD+bJo5DrHhs6qG6xkc81dQuVzVtWURVDUrDErW8N9g==";
+           /* File publicFile = new File("/Users/luoqb/Downloads/ras_public_key.pem");
+            File privateFile = new File("/Users/luoqb/Downloads/ras_private_key.pem");
+            RsaUtil.savePem(pubKey,priKey,publicFile,privateFile);*/
+            RsaUtil.RsaKeyPair rsaKeyPair = RsaUtil.generatorKeyPair();
+
+            File publicFile = new File("/Users/luoqb/Downloads/app_ras_public_key.pem");
+            File privateFile = new File("/Users/luoqb/Downloads/app_ras_private_key.pem");
+            RsaUtil.savePem(rsaKeyPair.publicKey,rsaKeyPair.privateKey,publicFile,privateFile);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -148,14 +173,12 @@ public class SecurityUtil {
          */
         public static SecretKeySpec getSecretKeySpec(String secretKeyStr){
             byte[] secretKey = Base64.getDecoder().decode(secretKeyStr);
-            System.out.println(secretKey.length);
             return new SecretKeySpec(secretKey, ALGORITHM);
         }
         /**
          */
         public static SecretKeySpec getSecretKeySpec(byte[] secretKeyStr){
-            //byte[] secretKey = Base64.getDecoder().decode(secretKeyStr);
-            //System.out.println(secretKey.length);
+
             return new SecretKeySpec(secretKeyStr, ALGORITHM);
         }
 
@@ -244,7 +267,7 @@ public class SecurityUtil {
          * @return
          * @throws NoSuchAlgorithmException
          */
-        public static RsaKeyPair generaterKeyPair() throws NoSuchAlgorithmException{
+        public static RsaKeyPair generatorKeyPair() throws NoSuchAlgorithmException{
             KeyPairGenerator keygen = KeyPairGenerator.getInstance(ALGORITHM);
             SecureRandom random = new SecureRandom();
             //            SecureRandom random = new SecureRandom(seedStr.getBytes()); // 随机因子一样，生成出来的秘钥会一样
@@ -327,6 +350,7 @@ public class SecurityUtil {
             return Base64.getEncoder().encodeToString(result);
         }
 
+
         /**
          * 解密
          * @param content
@@ -340,6 +364,27 @@ public class SecurityUtil {
             byte[] result = cipher.doFinal(Base64.getDecoder().decode(content));
             return new String(result);
         }
+
+        private static void savePem(String publicKey,String privateKey,File publicFile,File privateFile){
+            String publicPem = addPublicPemHeaderAndFooter(publicKey);
+            String privatePem = addPrivatePk8pemHeaderAndFooter(privateKey);
+            FileToDisk.write(publicFile,publicPem);
+            FileToDisk.write(privateFile,privatePem);
+        }
+
+        private static String addPrivatePk8pemHeaderAndFooter(String body) {
+            String header = "-----BEGIN PRIVATE KEY-----";
+            String footer = "-----END PRIVATE KEY-----";
+
+            return header + "\n" + body + "\n" + footer;
+        }
+
+        private static String addPublicPemHeaderAndFooter(String body) {
+            String header = "-----BEGIN PUBLIC KEY-----";
+            String footer = "-----END PUBLIC KEY-----";
+            return header + "\n" + body + "\n" + footer;
+        }
+
     }
 
 }

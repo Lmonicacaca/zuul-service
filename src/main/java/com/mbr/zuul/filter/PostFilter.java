@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.mbr.zuul.client.MerchantInfoFeign;
 import com.mbr.zuul.client.dto.BaseFeignResult;
 import com.mbr.zuul.client.dto.MerchantInfo;
+import com.mbr.zuul.util.AesUtil;
 import com.mbr.zuul.util.CommonsUtil;
 import com.mbr.zuul.util.SecurityUtil;
 import com.netflix.util.Pair;
@@ -17,13 +18,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.SecretKey;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 消息返回后解密
@@ -82,35 +81,36 @@ public class PostFilter  extends ZuulFilter {
                 String body = "";
                 //加密数据
                 try {
-                    byte[] aesKey = SecurityUtil.AesUtil.generaterKey();
+                    byte[] aesKey = AesUtil.generateAESSecretKey();
+                    byte[] iv = AesUtil.generateAESSecretIv();
 
                     //加密数据
-
-                    String content = SecurityUtil.AesUtil.encrypt(resBody,aesKey);
+                    SecretKey secretKey = AesUtil.restoreSecretKey(aesKey);
+                    byte[] content = AesUtil.AesCbcEncode(resBody.getBytes(), secretKey,iv);
                     String key = "";
                     Map map = JSONObject.toJavaObject(JSON.parseObject(resBody),Map.class);
                     //查询平台私钥
                     //BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById((Long) map.get("merchantId"));
                     BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById((Long) map.get("merchantId"));
                     MerchantInfo info = merchantInfo.getData();
-                    String defaultPrivateKey = "";
+                    String appPrivateKey = info.getRsaPrivate();
+
                     if (info!=null){
-                        //加密
-                        key = SecurityUtil.RsaUtil.encrypt(new String(aesKey),SecurityUtil.RsaUtil.getPrivateKey(info.getRsaPrivate()),charset);
-                        if (info.getId()==Long.parseLong(default_merchant)){
-                            defaultPrivateKey = info.getRsaPrivate();
-                        }else{//查询平台私钥
-                            BaseFeignResult<MerchantInfo> defaultMerInfo = this.merchantInfoFeign.queryById(Long.parseLong(default_merchant));
-                            if (defaultMerInfo.getData()!=null){
-                                defaultPrivateKey = defaultMerInfo.getData().getRsaPrivate();
-                            }
+
+                        BaseFeignResult<MerchantInfo> defaultMerInfo = this.merchantInfoFeign.queryById(Long.parseLong(default_merchant));
+                        if (defaultMerInfo.getData()!=null){
+                            // 查询平台公钥加密
+                            key = SecurityUtil.RsaUtil.encrypt(Base64.getEncoder().encodeToString(aesKey),SecurityUtil.RsaUtil.getPublicKey(info.getRsaPublic()),charset);
                         }
+
+                        // 查询App私钥签名
                     }
 
                     Map<String,Object> stringObjectMap = new HashMap<>();
-                    stringObjectMap.put("data",content);
+                    stringObjectMap.put("cipher", org.apache.commons.codec.binary.Base64.encodeBase64String(content));
                     stringObjectMap.put("key",key);
-                    stringObjectMap.put("sign",sign(content,info.getId()+"",defaultPrivateKey));
+                    stringObjectMap.put("iv",org.apache.commons.codec.binary.Base64.encodeBase64String(iv));
+                    stringObjectMap.put("signature",sign(content,appPrivateKey,iv,aesKey,info.getId()));
                     body = JSONObject.toJSONString(stringObjectMap);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -118,7 +118,7 @@ public class PostFilter  extends ZuulFilter {
 
 
                 // setLogger(resBody,"application/json;charset=utf-8", CommonsUtil.getIpAddr(context.getRequest()),"response",context.getRequest().getRequestURL().toString());
-
+                logger.info("返回加密内容->{}",resBody);
                 context.setResponseBody(body);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -128,16 +128,14 @@ public class PostFilter  extends ZuulFilter {
     }
 
 
-    private String sign(String body,String merchantId,String privateKey) throws Exception{
-        Map<String,String> mapSign = new HashMap<>();
-       /* mapSign.put("partner_no",merchantId);
-        mapSign.put("sign_type","RSA2");
-        mapSign.put("charset",charset);
-        mapSign.put("timestamp",new Date().getTime()+"");*/
-        mapSign.put("body",body);
-        String signString = CommonsUtil.putPairsSequenceAndTogether(mapSign);
-        //String signBase64 = org.apache.commons.codec.binary.Base64.encodeBase64String(signString.getBytes());
-        String sign = SecurityUtil.RsaUtil.sign(signString,privateKey,true,charset);
+    private String sign(byte[] body,String privateKey,byte[] iv,byte[] aesKey,Long partnerNo) throws Exception{
+
+        //按照 BASE64(cipher)+BASE64(keyEncrypted)+BASE64(iv)做字符串串拼接，⽆无分割符号，然后签名
+        String cipher = org.apache.commons.codec.binary.Base64.encodeBase64String(body);
+        String keyEncrypted = org.apache.commons.codec.binary.Base64.encodeBase64String(aesKey);
+        String ivString = org.apache.commons.codec.binary.Base64.encodeBase64String(iv);
+        String signString = cipher+keyEncrypted+ivString;
+        String sign = SecurityUtil.RsaUtil.sign(signString,privateKey,false,charset);
         return sign;
     }
 }
