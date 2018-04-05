@@ -6,6 +6,7 @@ import com.mbr.zuul.client.MerchantInfoFeign;
 import com.mbr.zuul.client.dto.BaseFeignResult;
 import com.mbr.zuul.client.dto.MerchantInfo;
 import com.mbr.zuul.client.dto.MerchantResourceResponse;
+import com.mbr.zuul.dto.Header;
 import com.mbr.zuul.util.CommonsUtil;
 import com.mbr.zuul.util.security.DCPAES;
 import com.mbr.zuul.util.security.DCPEncryptor;
@@ -116,7 +117,7 @@ public class PreFilter extends ZuulFilter {
     }
 
     //解密内容
-    private Object decryptContent(String content,RequestContext ctx,Long merchantId){
+    private Object decryptContent(String content,RequestContext ctx, Header h){
         Map<String,Object> map = JSONObject.toJavaObject(JSON.parseObject(content),Map.class);
         String key = (String)map.get("key");
         try {
@@ -126,15 +127,12 @@ public class PreFilter extends ZuulFilter {
             if (defaultMerInfo.getData()!=null){
                 selfPrivateKey = defaultMerInfo.getData().getRsaPrivate();
             }
-
-
             String  d = (String)map.get("cipher");
-
             String  iv = (String)map.get("iv");
             byte[] body =  DCPEncryptor.decrypt(key,iv,d,selfPrivateKey);
             String bodyString = new String(body,"UTF-8");
             logger.info("Ip地址->{};请求URL->{};请求内容->{}", CommonsUtil.getIpAddr(ctx.getRequest()),ctx.getRequest().getRequestURI(),bodyString);
-            setInputStream(bodyString,ctx,merchantId);
+            setInputStream(bodyString,ctx,h);
             return  null;
         } catch (Exception e) {
             e.printStackTrace();
@@ -143,12 +141,22 @@ public class PreFilter extends ZuulFilter {
     }
 
 
-    private void setInputStream(String content,RequestContext ctx,Long merchantId){
+    private void setInputStream(String content,RequestContext ctx,Header h){
         byte[] reqBodyBytes = content.getBytes();
         List<String> list = new ArrayList<>();
-        list.add(merchantId+"");
+        list.add(h.getMerchantId()+"");
+        List<String> deviceIdList = new ArrayList<>();
+        deviceIdList.add(h.getDevice().getDeviceId());
+        List<String> pushIdList = new ArrayList<>();
+        pushIdList.add(h.getDevice().getPushId());
+
+        List<String> appversionList = new ArrayList<>();
+        appversionList.add(h.getDevice().getAppVersion());
         Map<String ,List<String>> map = new HashMap<>();
         map.put("merchantId",list);
+        map.put("deviceId",deviceIdList);
+        map.put("pushId",pushIdList);
+        map.put("appVersion",appversionList);
         ctx.setRequestQueryParams(map);
         ctx.setRequest(new HttpServletRequestWrapper(getCurrentContext().getRequest()) {
             @Override
@@ -174,38 +182,30 @@ public class PreFilter extends ZuulFilter {
 
         byte[] headerByte  = Base64.decodeBase64(header);
         String content = new String(headerByte);
-        Map map = JSONObject.toJavaObject(JSON.parseObject(content),Map.class);
-        Long merchantId = Long.parseLong(map.get("partnerNo").toString());
-        String sign = (String)map.get("signature");
-        String signType = (String)map.get("signType");
-        String charset = (String)map.get("charset");
-        Long timestamp = Long.parseLong(map.get("timestamp").toString());
-        boolean b = verifyTimeOut(timestamp);
+        logger.info("请求头内容:{}",content);
+
+        Header  h = JSONObject.toJavaObject(JSON.parseObject(content),Header.class);
+
+
+        boolean b = verifyTimeOut( h.getTimestamp());
         if (!b){
             Map<String,Object> mapError = new HashMap<>();
             mapError.put("code","500");
             mapError.put("msg","请求超时");
-            return this.setErrorMsg(ctx,mapError,merchantId);
+            return this.setErrorMsg(ctx,mapError,h.getMerchantId());
         }
 
 
-        return verifySign(merchantId,sign,signType,charset,timestamp,ctx,body);
+        return verifySign(charset,ctx,body,h);
     }
 
     private Object verifyUrl(Long merchantId,RequestContext ctx){
         HttpServletRequest request = ctx.getRequest();
         String url = request.getRequestURI();
         boolean b = false;
-        BaseFeignResult<List<MerchantResourceResponse>> listBaseFeignResult = this.merchantInfoFeign.queryByResource(merchantId);
+        BaseFeignResult<List<MerchantResourceResponse>> listBaseFeignResult = this.merchantInfoFeign.queryByResource(merchantId,url);
         if (listBaseFeignResult.getData()!=null&&listBaseFeignResult.getData().size()>0){
-            for (MerchantResourceResponse response:listBaseFeignResult.getData()){
-                if (response.getUrl().equals(url)){
-                    b = true;
-                    break;
-                }else{
-                    b = false;
-                }
-            }
+            b = true;
         }
         if (!b){
             Map<String,Object> map = new HashMap<>();
@@ -227,10 +227,10 @@ public class PreFilter extends ZuulFilter {
     }
 
      //验证签名
-     private Object verifySign(Long merchantId,String sign,String signType,String charset,Long timestamp,RequestContext ctx,String body ){
-         verifyUrl(merchantId,ctx);
+     private Object verifySign(String charset,RequestContext ctx,String body,Header h){
+         verifyUrl(h.getMerchantId(),ctx);
         // 获取公钥
-         BaseFeignResult<MerchantInfo> baseFeignResult = this.merchantInfoFeign.queryById(merchantId);
+         BaseFeignResult<MerchantInfo> baseFeignResult = this.merchantInfoFeign.queryById(h.getMerchantId());
          if (baseFeignResult.getData()!=null) {
              MerchantInfo merchantInfo = baseFeignResult.getData();
 
@@ -239,15 +239,15 @@ public class PreFilter extends ZuulFilter {
              String cipher = (String)mapBody.get("cipher");
              String keyEncrypted = (String)mapBody.get("key");
              String iv = (String)mapBody.get("iv");
-             boolean b = DCPEncryptor.verifySignature(sign,signType,keyEncrypted,iv,cipher,merchantInfo.getRsaPublic());
+             boolean b = DCPEncryptor.verifySignature(h.getSignature(),h.getSignType(),keyEncrypted,iv,cipher,merchantInfo.getRsaPublic());
 
             if (b){
-                return decryptContent(body,ctx,merchantId);
+                return decryptContent(body,ctx,h);
             }else {
                 Map<String,Object> map = new HashMap<>();
                 map.put("code","500");
                 map.put("msg","签名认证失败");
-                return this.setErrorMsg(ctx,map,merchantId);
+                return this.setErrorMsg(ctx,map,h.getMerchantId());
             }
 
          }else {

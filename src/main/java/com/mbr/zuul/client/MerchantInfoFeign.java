@@ -16,7 +16,7 @@ public interface MerchantInfoFeign {
     public BaseFeignResult<MerchantInfo> queryById(@RequestParam("id") Long id);
 
     @PostMapping("queryByResource")
-    public BaseFeignResult<List<MerchantResourceResponse>> queryByResource(@RequestParam("merchantId") Long merchantId);
+    public BaseFeignResult<List<MerchantResourceResponse>> queryByResource(@RequestParam("merchantId") Long merchantId,@RequestParam("url") String url);
 
 
     }

@@ -7,10 +7,13 @@ server:
 
 zuul:
   routes:
-    api-login:
+    api-client:
       path: /client/**
-      #service-id: client-service
-      url: http://localhost:9906/
+      service-id: client-service
+    api-dcpayCore:
+      path: /dcpayCore/**
+      service-id: dcpay-core
+
 
   host:
     socket-timeout-millis: 1000000

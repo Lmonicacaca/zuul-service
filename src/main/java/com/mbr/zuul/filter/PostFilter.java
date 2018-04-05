@@ -77,17 +77,29 @@ public class PostFilter  extends ZuulFilter {
                 logger.info("返回明文内容->{}", resBody);
 
                 Map map = JSONObject.toJavaObject(JSON.parseObject(resBody), Map.class);
+                if (!map.get("code").equals("200")){
+                    context.setResponseBody(resBody);
+                }else {
+                    String merchantId = (String) map.get("merchantId");
+                    if (merchantId == null) {
+                        Map data = (Map) map.get("data");
+                        merchantId = (String) data.get("merchantId");
+                    }
+                    BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById(Long.parseLong(merchantId));
+                    MerchantInfo info = merchantInfo.getData();
+                    String appPublicKey = info.getRsaPublic();
+                    merchantInfo = this.merchantInfoFeign.queryById(Long.parseLong(default_merchant));
+                    String defaultPrivate = merchantInfo.getData().getRsaPrivate();
 
-                BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById((Long) map.get("merchantId"));
-                MerchantInfo info = merchantInfo.getData();
-                String appPublicKey = info.getRsaPublic();
-                merchantInfo = this.merchantInfoFeign.queryById(Long.parseLong(default_merchant));
-                String defaultPrivate = merchantInfo.getData().getRsaPrivate();
-
-                Map<String, String> stringObjectMap = DCPEncryptor.encrypt(resBody, appPublicKey, defaultPrivate);
-                String body = JSONObject.toJSONString(stringObjectMap);
-                logger.info("返回加密内容->{}", body);
-                context.setResponseBody(body);
+                    Map<String, String> stringObjectMap = DCPEncryptor.encrypt(resBody, appPublicKey, defaultPrivate);
+                    String body = JSONObject.toJSONString(stringObjectMap);
+                    logger.info("返回加密内容->{}", body);
+                    Map<String,String> stringMap = new HashMap<>();
+                    stringMap.put("code",map.get("code").toString());
+                    stringMap.put("message",map.get("message").toString());
+                    stringMap.put("data",body);
+                    context.setResponseBody(body);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 logger.error(e.getMessage());
