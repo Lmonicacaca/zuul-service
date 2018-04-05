@@ -180,13 +180,13 @@ public class PreFilter extends ZuulFilter {
         String signType = (String)map.get("signType");
         String charset = (String)map.get("charset");
         Long timestamp = Long.parseLong(map.get("timestamp").toString());
-//        boolean b = verifyTimeOut(timestamp);
-//        if (!b){
-//            Map<String,Object> mapError = new HashMap<>();
-//            mapError.put("code","500");
-//            mapError.put("msg","请求超时");
-//            return this.setMsg(ctx,mapError,merchantId);
-//        }
+        boolean b = verifyTimeOut(timestamp);
+        if (!b){
+            Map<String,Object> mapError = new HashMap<>();
+            mapError.put("code","500");
+            mapError.put("msg","请求超时");
+            return this.setErrorMsg(ctx,mapError,merchantId);
+        }
 
 
         return verifySign(merchantId,sign,signType,charset,timestamp,ctx,body);
