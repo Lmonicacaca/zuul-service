@@ -5,6 +5,8 @@ import com.alibaba.fastjson.JSONObject;
 import com.mbr.zuul.client.MerchantInfoFeign;
 import com.mbr.zuul.client.dto.BaseFeignResult;
 import com.mbr.zuul.client.dto.MerchantInfo;
+import com.mbr.zuul.dto.Header;
+import com.mbr.zuul.util.HeaderContext;
 import com.mbr.zuul.util.security.DCPEncryptor;
 import com.netflix.util.Pair;
 import com.netflix.zuul.ZuulFilter;
@@ -15,6 +17,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import javax.crypto.SecretKey;
 import javax.servlet.http.HttpServletResponse;
@@ -80,12 +84,10 @@ public class PostFilter  extends ZuulFilter {
                 if (!map.get("code").equals("200")){
                     context.setResponseBody(resBody);
                 }else {
-                    String merchantId = (String) map.get("merchantId");
-                    if (merchantId == null) {
-                        Map data = (Map) map.get("data");
-                        merchantId = (String) data.get("merchantId");
-                    }
-                    BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById(Long.parseLong(merchantId));
+                    Header header = HeaderContext.getHeader();
+
+                    logger.info("merchantIdString-->{}",header.getMerchantId());
+                    BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById(header.getMerchantId());
                     MerchantInfo info = merchantInfo.getData();
                     String appPublicKey = info.getRsaPublic();
                     merchantInfo = this.merchantInfoFeign.queryById(Long.parseLong(default_merchant));
@@ -99,6 +101,8 @@ public class PostFilter  extends ZuulFilter {
                     stringMap.put("message",map.get("message").toString());
                     stringMap.put("data",body);
                     context.setResponseBody(body);
+
+                    HeaderContext.removeHeader();
                 }
             } catch (Exception e) {
                 e.printStackTrace();

@@ -8,6 +8,7 @@ import com.mbr.zuul.client.dto.MerchantInfo;
 import com.mbr.zuul.client.dto.MerchantResourceResponse;
 import com.mbr.zuul.dto.Header;
 import com.mbr.zuul.util.CommonsUtil;
+import com.mbr.zuul.util.HeaderContext;
 import com.mbr.zuul.util.security.DCPAES;
 import com.mbr.zuul.util.security.DCPEncryptor;
 import com.netflix.zuul.ZuulFilter;
@@ -21,6 +22,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import javax.crypto.SecretKey;
 import javax.servlet.ServletInputStream;
@@ -185,8 +188,7 @@ public class PreFilter extends ZuulFilter {
         logger.info("请求头内容:{}",content);
 
         Header  h = JSONObject.toJavaObject(JSON.parseObject(content),Header.class);
-
-
+        HeaderContext.setHeader(h);
         boolean b = verifyTimeOut( h.getTimestamp());
         if (!b){
             Map<String,Object> mapError = new HashMap<>();
