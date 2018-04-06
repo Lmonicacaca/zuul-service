@@ -96,11 +96,12 @@ public class PostFilter  extends ZuulFilter {
                     Map<String, String> stringObjectMap = DCPEncryptor.encrypt(resBody, appPublicKey, defaultPrivate);
                     String body = JSONObject.toJSONString(stringObjectMap);
                     logger.info("返回加密内容->{}", body);
+
                     Map<String,String> stringMap = new HashMap<>();
                     stringMap.put("code",map.get("code").toString());
                     stringMap.put("message",map.get("message").toString());
                     stringMap.put("data",body);
-                    context.setResponseBody(body);
+                    context.setResponseBody(JSONObject.toJSONString(stringMap));
 
                     HeaderContext.removeHeader();
                 }
