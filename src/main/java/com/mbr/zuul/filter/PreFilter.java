@@ -15,6 +15,7 @@ import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.http.ServletInputStreamWrapper;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +67,7 @@ public class PreFilter extends ZuulFilter {
     }
 
 
-    private Object setErrorMsg( RequestContext ctx ,Map<String,Object> errorMap,Long merchantInfoId){
+    private Object setErrorMsg( RequestContext ctx ,Map<String,Object> errorMap){
         ctx.setSendZuulResponse(false);
         ctx.setResponseStatusCode(401);// 返回错误码
         String resBody = JSONObject.toJSONString(errorMap);
@@ -77,7 +78,8 @@ public class PreFilter extends ZuulFilter {
         logger.info("返回明文内容->{}", resBody);
         Map map = JSONObject.toJavaObject(JSON.parseObject(resBody),Map.class);
         //APP公钥加密
-        BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById((Long) map.get("merchantId"));
+        Header header = HeaderContext.getHeader();
+        BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById(header.getMerchantId());
         MerchantInfo info = merchantInfo.getData();
         String appPublicKey = info.getRsaPublic();
         merchantInfo = this.merchantInfoFeign.queryById(Long.parseLong(default_merchant));
@@ -100,15 +102,28 @@ public class PreFilter extends ZuulFilter {
 
         RequestContext ctx = getCurrentContext();
         HttpServletRequest request = ctx.getRequest();
-
-        String body = "";
-        try {
-            body = IOUtils.toString(request.getInputStream(),"UTF-8");
-        } catch (IOException e) {
-            e.printStackTrace();
+        String regexJson = "^application/json.*";
+        String contentType = request.getContentType();
+        if(StringUtils.isEmpty(contentType)){
+            ctx.setSendZuulResponse(true);
+            return null;
         }
-        String header = request.getHeader("token");
-        return verifyHeader(header,ctx,body);
+
+        if(contentType.matches(regexJson)) {//请求是application/json 开头
+            String body = "";
+            try {
+                body = IOUtils.toString(request.getInputStream(), "UTF-8");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            String header = request.getHeader("token");
+            return verifyHeader(header, ctx, body);
+        }else{
+            Map<String,Object> map = new HashMap<>();
+            map.put("code","500");
+            map.put("msg","请求类型不正确");
+            return this.setErrorMsg(ctx,map);
+        }
 
 
     }
@@ -188,7 +203,7 @@ public class PreFilter extends ZuulFilter {
             Map<String,Object> mapError = new HashMap<>();
             mapError.put("code","500");
             mapError.put("msg","请求超时");
-            return this.setErrorMsg(ctx,mapError,h.getMerchantId());
+            return this.setErrorMsg(ctx,mapError);
         }
 
 
@@ -207,7 +222,7 @@ public class PreFilter extends ZuulFilter {
             Map<String,Object> map = new HashMap<>();
             map.put("code","500");
             map.put("msg","URL 没有访问权限");
-            return this.setErrorMsg(ctx,map,merchantId);
+            return this.setErrorMsg(ctx,map);
         }
         return null;
     }
@@ -243,7 +258,7 @@ public class PreFilter extends ZuulFilter {
                 Map<String,Object> map = new HashMap<>();
                 map.put("code","500");
                 map.put("msg","签名认证失败");
-                return this.setErrorMsg(ctx,map,h.getMerchantId());
+                return this.setErrorMsg(ctx,map);
             }
 
          }else {

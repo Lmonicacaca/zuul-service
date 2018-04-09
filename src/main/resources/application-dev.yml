@@ -13,6 +13,9 @@ zuul:
     api-dcpayCore:
       path: /dcpayCore/**
       service-id: dcpay-core
+    api-upload:
+      path: /upload/**
+      service-id: upload-service
 
 
   host:
