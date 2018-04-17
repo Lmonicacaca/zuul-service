@@ -98,12 +98,12 @@ public class PostFilter  extends ZuulFilter {
                     stringMap.put("message",map.get("message").toString());
                     stringMap.put("data",body);
                     context.setResponseBody(JSONObject.toJSONString(stringMap));
-
-                    HeaderContext.removeHeader();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
                 logger.error(e.getMessage());
+            }finally {
+                HeaderContext.removeHeader();
             }
         }
         return null;
