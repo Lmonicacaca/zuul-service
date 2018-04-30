@@ -15,7 +15,8 @@ spring:
       profile: dev
       label: master
       uri: ${SPRING_CONFIG_URI:http://47.100.18.6:9901}
-
+  zipkin:
+    base-url: http://47.100.47.200:9949/
 
 
 

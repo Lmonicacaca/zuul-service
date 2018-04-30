@@ -13,6 +13,7 @@ zuul:
     api-dcpayCore:
       path: /dcpayCore/**
       service-id: dcpay-core
+      url: http://172.19.2.12:9105
     api-upload:
       path: /upload/**
       service-id: upload-service
