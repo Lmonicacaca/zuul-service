@@ -5,6 +5,15 @@ public class Device {
     private String pushId;
     private String deviceId;
     private String appVersion;
+    private String system;
+
+    public String getSystem() {
+        return system;
+    }
+
+    public void setSystem(String system) {
+        this.system = system;
+    }
 
     public String getPushId() {
         return pushId;

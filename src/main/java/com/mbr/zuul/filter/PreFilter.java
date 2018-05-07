@@ -169,6 +169,10 @@ public class PreFilter extends ZuulFilter {
         map.put("deviceId",deviceIdList);
         map.put("pushId",pushIdList);
         map.put("appVersion",appversionList);
+
+        List<String> systemList = new ArrayList<>();
+        systemList.add(h.getDevice().getSystem());
+        map.put("sysetem",systemList);
         ctx.setRequestQueryParams(map);
         ctx.setRequest(new HttpServletRequestWrapper(getCurrentContext().getRequest()) {
             @Override
