@@ -5,46 +5,4 @@ server:
     max-threads: 1000
     max-connections: 1000
 
-zuul:
-  routes:
-    api-client:
-      path: /client/**
-      service-id: client-service
-    api-dcpayCore:
-      path: /dcpayCore/**
-      service-id: dcpay-core
-      url: http://172.19.2.12:9105
-    api-upload:
-      path: /upload/**
-      service-id: upload-service
 
-
-  host:
-    socket-timeout-millis: 1000000
-    connect-timeout-millis: 1000000
-    max-per-route-connections: 1000
-    max-total-connections: 1000
-  add-host-header: true
-
-
-ribbon:
-  ConnectTimeout: 1000000
-  ReadTimeout: 1000000
-
-hystrix:
-  command:
-    default:
-      execution:
-        timeout:
-          enabled: false
-
-
-default_merchant: 10000000000000
-
-token_exp: 600000 #token 失效时间
-
-spring:
-  http:
-    multipart:
-      max-request-size: 100Mb
-      max-file-size: 100Mb
