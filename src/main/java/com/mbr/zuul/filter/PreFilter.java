@@ -172,7 +172,12 @@ public class PreFilter extends ZuulFilter {
 
         List<String> systemList = new ArrayList<>();
         systemList.add(h.getDevice().getSystem());
-        map.put("sysetem",systemList);
+        map.put("system",systemList);
+
+        List<String> languageList = new ArrayList<>();
+        systemList.add(h.getDevice().getLanguage());
+        map.put("language",languageList);
+
         ctx.setRequestQueryParams(map);
         ctx.setRequest(new HttpServletRequestWrapper(getCurrentContext().getRequest()) {
             @Override

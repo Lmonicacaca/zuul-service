@@ -6,6 +6,15 @@ public class Device {
     private String deviceId;
     private String appVersion;
     private String system;
+    private String language;//zh_CN,
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
 
     public String getSystem() {
         return system;
