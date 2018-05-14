@@ -6,7 +6,7 @@ public class Device {
     private String deviceId;
     private String appVersion;
     private String system;
-    private String language;//zh_CN,
+    private String language;//zh_CN、zh_TW、en_US、ja-JP、ko-KR
 
     public String getLanguage() {
         return language;
