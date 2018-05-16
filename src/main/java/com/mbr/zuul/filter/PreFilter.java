@@ -75,7 +75,7 @@ public class PreFilter extends ZuulFilter {
         response.setHeader("content-type","application/json;charset=utf-8");
 
         //加密数据
-        logger.info("返回明文内容->{}", resBody);
+        logger.debug("返回明文内容->{}", resBody);
         Map map = JSONObject.toJavaObject(JSON.parseObject(resBody),Map.class);
         //APP公钥加密
         Header header = HeaderContext.getHeader();

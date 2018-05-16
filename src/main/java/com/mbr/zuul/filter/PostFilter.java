@@ -60,6 +60,7 @@ public class PostFilter  extends ZuulFilter {
         List<Pair<String, String>> list = context.getZuulResponseHeaders();
         //获得返回的content-type 判断是不是下载图片
         Boolean b = false;
+        logger.info("ResponseHeaders->{}",JSONObject.toJSONString(list));
         if(list!=null&&list.size()>0){
             for(Pair p:list){
                 String contentType = String.valueOf(p.second());
@@ -70,11 +71,23 @@ public class PostFilter  extends ZuulFilter {
                 }
             }
         }
+        if(list!=null&&list.size()>0){
+            for(Pair p:list){
+                String contentLength = (String)p.first();
+                //String contentLength = String.valueOf(p.second());
+                String regexJson = "^Cache-Control.*";
+                if(contentLength.matches(regexJson)){
+                   response.setHeader("Content-Length",(String)p.second());
+                    break;
+                }
+            }
+        }
+
         if(b) {
             response.setHeader("content-type", "application/json;charset=utf-8");
             try {
                 String resBody = IOUtils.toString(context.getResponseDataStream(), "UTF-8");
-                logger.info("返回明文内容->{}", resBody);
+                logger.debug("返回明文内容->{}", resBody);
 
                 Map map = JSONObject.toJavaObject(JSON.parseObject(resBody), Map.class);
                 if (!map.get("code").equals("200")){
@@ -82,7 +95,7 @@ public class PostFilter  extends ZuulFilter {
                 }else {
                     Header header = HeaderContext.getHeader();
 
-                    logger.info("merchantIdString-->{}",header.getMerchantId());
+                    logger.debug("merchantIdString-->{}",header.getMerchantId());
                     BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById(header.getMerchantId());
                     MerchantInfo info = merchantInfo.getData();
                     String appPublicKey = info.getRsaPublic();
@@ -91,7 +104,7 @@ public class PostFilter  extends ZuulFilter {
 
                     Map<String, String> stringObjectMap = DCPEncryptor.encrypt(resBody, appPublicKey, defaultPrivate);
                     String body = JSONObject.toJSONString(stringObjectMap);
-                    logger.info("返回加密内容->{}", body);
+                    logger.debug("返回加密内容->{}", body);
 
                     Map<String,String> stringMap = new HashMap<>();
                     stringMap.put("code",map.get("code").toString());
