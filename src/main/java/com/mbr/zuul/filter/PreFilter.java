@@ -155,19 +155,21 @@ public class PreFilter extends ZuulFilter {
 
     private void setInputStream(String content,RequestContext ctx,Header h){
         byte[] reqBodyBytes = content.getBytes();
+        Map<String ,List<String>> map = new HashMap<>();
         List<String> list = new ArrayList<>();
         list.add(h.getMerchantId()+"");
+        map.put("merchantId",list);
+
         List<String> deviceIdList = new ArrayList<>();
         deviceIdList.add(h.getDevice().getDeviceId());
+        map.put("deviceId",deviceIdList);
+
         List<String> pushIdList = new ArrayList<>();
         pushIdList.add(h.getDevice().getPushId());
+        map.put("pushId",pushIdList);
 
         List<String> appversionList = new ArrayList<>();
         appversionList.add(h.getDevice().getAppVersion());
-        Map<String ,List<String>> map = new HashMap<>();
-        map.put("merchantId",list);
-        map.put("deviceId",deviceIdList);
-        map.put("pushId",pushIdList);
         map.put("appVersion",appversionList);
 
         List<String> systemList = new ArrayList<>();
@@ -175,10 +177,14 @@ public class PreFilter extends ZuulFilter {
         map.put("system",systemList);
 
         List<String> languageList = new ArrayList<>();
-        systemList.add(h.getDevice().getLanguage());
+        languageList.add(h.getDevice().getLanguage());
         map.put("language",languageList);
 
         ctx.setRequestQueryParams(map);
+
+        logger.info("请求头内容:->{}",JSONObject.toJSONString(h));
+
+        logger.info("setRequestQueryParams内容:->{}",JSONObject.toJSONString(ctx.getRequestQueryParams()));
         ctx.setRequest(new HttpServletRequestWrapper(getCurrentContext().getRequest()) {
             @Override
             public ServletInputStream getInputStream() throws IOException {
@@ -203,7 +209,7 @@ public class PreFilter extends ZuulFilter {
 
         byte[] headerByte  = Base64.decodeBase64(header);
         String content = new String(headerByte);
-        logger.info("请求头内容:{}",content);
+        logger.debug("请求头内容:{}",content);
 
         Header  h = JSONObject.toJavaObject(JSON.parseObject(content),Header.class);
         HeaderContext.setHeader(h);

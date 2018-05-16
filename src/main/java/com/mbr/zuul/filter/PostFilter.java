@@ -87,7 +87,7 @@ public class PostFilter  extends ZuulFilter {
             response.setHeader("content-type", "application/json;charset=utf-8");
             try {
                 String resBody = IOUtils.toString(context.getResponseDataStream(), "UTF-8");
-                logger.debug("返回明文内容->{}", resBody);
+                logger.info("返回明文内容->{}", resBody);
 
                 Map map = JSONObject.toJavaObject(JSON.parseObject(resBody), Map.class);
                 if (!map.get("code").equals("200")){
