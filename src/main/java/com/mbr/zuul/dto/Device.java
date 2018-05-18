@@ -5,8 +5,9 @@ public class Device {
     private String pushId;
     private String deviceId;
     private String appVersion;
-    private String system;
+    private String system;// Android IOS
     private String language;//zh_CN、zh_TW、en_US、ja-JP、ko-KR
+    private String packageName; // app 包名  此包名必须和jpush 设置一样
 
     public String getLanguage() {
         return language;
@@ -46,5 +47,13 @@ public class Device {
 
     public void setAppVersion(String appVersion) {
         this.appVersion = appVersion;
+    }
+
+    public String getPackageName() {
+        return packageName;
+    }
+
+    public void setPackageName(String packageName) {
+        this.packageName = packageName;
     }
 }

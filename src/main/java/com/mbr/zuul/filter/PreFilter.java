@@ -180,6 +180,10 @@ public class PreFilter extends ZuulFilter {
         languageList.add(h.getDevice().getLanguage());
         map.put("language",languageList);
 
+        List<String> packageNameList = new ArrayList<>();
+        packageNameList.add(h.getDevice().getPackageName());
+        map.put("packageName",packageNameList);
+
         ctx.setRequestQueryParams(map);
 
         logger.info("请求头内容:->{}",JSONObject.toJSONString(h));
