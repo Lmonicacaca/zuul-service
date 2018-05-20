@@ -8,6 +8,7 @@ public class Device {
     private String system;// Android IOS
     private String language;//zh_CN、zh_TW、en_US、ja-JP、ko-KR
     private String packageName; // app 包名  此包名必须和jpush 设置一样
+    private String channel;
 
     public String getLanguage() {
         return language;
@@ -55,5 +56,13 @@ public class Device {
 
     public void setPackageName(String packageName) {
         this.packageName = packageName;
+    }
+
+    public String getChannel() {
+        return channel;
+    }
+
+    public void setChannel(String channel) {
+        this.channel = channel;
     }
 }

@@ -184,6 +184,10 @@ public class PreFilter extends ZuulFilter {
         packageNameList.add(h.getDevice().getPackageName());
         map.put("packageName",packageNameList);
 
+
+        List<String> channelList = new ArrayList<>();
+        channelList.add(h.getDevice().getChannel());
+        map.put("channel",channelList);
         ctx.setRequestQueryParams(map);
 
         logger.info("请求头内容:->{}",JSONObject.toJSONString(h));
