@@ -2,8 +2,10 @@ package com.mbr.zuul.filter;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.mbr.zuul.client.ClientFeign;
 import com.mbr.zuul.client.MerchantInfoFeign;
 import com.mbr.zuul.client.dto.BaseFeignResult;
+import com.mbr.zuul.client.dto.Channel;
 import com.mbr.zuul.client.dto.MerchantInfo;
 import com.mbr.zuul.client.dto.MerchantResourceResponse;
 import com.mbr.zuul.dto.Header;
@@ -45,6 +47,9 @@ public class PreFilter extends ZuulFilter {
 
     @Value("${default_merchant}")
     private String default_merchant;
+
+    @Autowired
+    private ClientFeign clientFeign;
 
     private String charset="UTF-8";
 
@@ -186,7 +191,7 @@ public class PreFilter extends ZuulFilter {
 
 
         List<String> channelList = new ArrayList<>();
-        channelList.add(h.getDevice().getChannel());
+        channelList.add(String.valueOf(h.getDevice().getChannel()));
         map.put("channel",channelList);
         ctx.setRequestQueryParams(map);
 
@@ -228,9 +233,28 @@ public class PreFilter extends ZuulFilter {
             mapError.put("msg","请求超时");
             return this.setErrorMsg(ctx,mapError);
         }
-
+        if (!checkChannel(h.getDevice().getChannel())){
+            Map<String,Object> mapError = new HashMap<>();
+            mapError.put("code","501");
+            mapError.put("msg","Channel 错误");
+            return this.setErrorMsg(ctx,mapError);
+        }
 
         return verifySign(charset,ctx,body,h);
+    }
+
+    private boolean checkChannel(Long channel){
+        BaseFeignResult<Channel> baseFeignResult = clientFeign.queryById(channel);
+        if (baseFeignResult.getData()==null){
+           return false;
+        }else{
+            Channel c = baseFeignResult.getData();
+            if (c.getStatus()==0) {
+                return true;
+            }else{
+                return false;
+            }
+        }
     }
 
     private Object verifyUrl(Long merchantId,RequestContext ctx){
