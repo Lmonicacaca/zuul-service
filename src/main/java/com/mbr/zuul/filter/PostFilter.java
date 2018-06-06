@@ -96,10 +96,10 @@ public class PostFilter  extends ZuulFilter {
                     Header header = HeaderContext.getHeader();
 
                     logger.debug("merchantIdString-->{}",header.getMerchantId());
-                    BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById(header.getMerchantId());
+                    BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById(header.getMerchantId(),null);
                     MerchantInfo info = merchantInfo.getData();
                     String appPublicKey = info.getRsaPublic();
-                    merchantInfo = this.merchantInfoFeign.queryById(Long.parseLong(default_merchant));
+                    merchantInfo = this.merchantInfoFeign.queryById(Long.parseLong(default_merchant),null);
                     String defaultPrivate = merchantInfo.getData().getRsaPrivate();
 
                     Map<String, String> stringObjectMap = DCPEncryptor.encrypt(resBody, appPublicKey, defaultPrivate);

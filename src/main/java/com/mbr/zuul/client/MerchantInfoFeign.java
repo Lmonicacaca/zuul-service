@@ -7,16 +7,20 @@ import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @FeignClient("merchant-service")
 public interface MerchantInfoFeign {
 
-    @PostMapping("merchantInfo/queryById")
-    public BaseFeignResult<MerchantInfo> queryById(@RequestParam("id") Long id);
 
-    @PostMapping("queryByResource")
-    public BaseFeignResult<List<MerchantResourceResponse>> queryByResource(@RequestParam("merchantId") Long merchantId,@RequestParam("url") String url);
+    @PostMapping("/merchantInfo/queryById")
+    public BaseFeignResult<MerchantInfo> queryById(
+            @Valid @RequestParam("id") Long id,
+            @RequestParam(value = "channel",required = false) Long channel);
 
+    @PostMapping("/queryByResource")
+    public BaseFeignResult<List<MerchantResourceResponse>> queryByResource(@RequestParam("merchantId") Long merchantId,
+                                                                      @RequestParam("url") String url, @RequestParam("channel") Long channel);
 
-    }
+}

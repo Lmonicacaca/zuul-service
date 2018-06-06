@@ -84,10 +84,10 @@ public class PreFilter extends ZuulFilter {
         Map map = JSONObject.toJavaObject(JSON.parseObject(resBody),Map.class);
         //APP公钥加密
         Header header = HeaderContext.getHeader();
-        BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById(header.getMerchantId());
+        BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById(header.getMerchantId(),null);
         MerchantInfo info = merchantInfo.getData();
         String appPublicKey = info.getRsaPublic();
-        merchantInfo = this.merchantInfoFeign.queryById(Long.parseLong(default_merchant));
+        merchantInfo = this.merchantInfoFeign.queryById(Long.parseLong(default_merchant),null);
         String defaultPrivate = merchantInfo.getData().getRsaPrivate();
 
         Map<String,String> stringObjectMap = DCPEncryptor.encrypt(resBody,appPublicKey,defaultPrivate);
@@ -140,7 +140,7 @@ public class PreFilter extends ZuulFilter {
         try {
             //查询平台公钥解密
             String selfPrivateKey = "";
-            BaseFeignResult<MerchantInfo> defaultMerInfo = this.merchantInfoFeign.queryById(Long.parseLong(default_merchant));
+            BaseFeignResult<MerchantInfo> defaultMerInfo = this.merchantInfoFeign.queryById(Long.parseLong(default_merchant),null);
             if (defaultMerInfo.getData()!=null){
                 selfPrivateKey = defaultMerInfo.getData().getRsaPrivate();
             }
@@ -233,11 +233,13 @@ public class PreFilter extends ZuulFilter {
             mapError.put("msg","请求超时");
             return this.setErrorMsg(ctx,mapError);
         }
-        if (!checkChannel(h.getDevice().getChannel())){
-            Map<String,Object> mapError = new HashMap<>();
-            mapError.put("code","501");
-            mapError.put("msg","Channel 错误");
-            return this.setErrorMsg(ctx,mapError);
+        if (h.getDevice().getChannel()!=null) {
+            if (!checkChannel(h.getDevice().getChannel())) {
+                Map<String, Object> mapError = new HashMap<>();
+                mapError.put("code", "501");
+                mapError.put("msg", "Channel 错误");
+                return this.setErrorMsg(ctx, mapError);
+            }
         }
 
         return verifySign(charset,ctx,body,h);
@@ -257,11 +259,11 @@ public class PreFilter extends ZuulFilter {
         }
     }
 
-    private Object verifyUrl(Long merchantId,RequestContext ctx){
+    private Object verifyUrl(Long merchantId,RequestContext ctx,Header h){
         HttpServletRequest request = ctx.getRequest();
         String url = request.getRequestURI();
         boolean b = false;
-        BaseFeignResult<List<MerchantResourceResponse>> listBaseFeignResult = this.merchantInfoFeign.queryByResource(merchantId,url);
+        BaseFeignResult<List<MerchantResourceResponse>> listBaseFeignResult = this.merchantInfoFeign.queryByResource(merchantId,url,h.getDevice().getChannel());
         if (listBaseFeignResult.getData()!=null&&listBaseFeignResult.getData().size()>0){
             b = true;
         }
@@ -286,9 +288,9 @@ public class PreFilter extends ZuulFilter {
 
      //验证签名
      private Object verifySign(String charset,RequestContext ctx,String body,Header h){
-         verifyUrl(h.getMerchantId(),ctx);
+         verifyUrl(h.getMerchantId(),ctx,h);
         // 获取公钥
-         BaseFeignResult<MerchantInfo> baseFeignResult = this.merchantInfoFeign.queryById(h.getMerchantId());
+         BaseFeignResult<MerchantInfo> baseFeignResult = this.merchantInfoFeign.queryById(h.getMerchantId(),null);
          if (baseFeignResult.getData()!=null) {
              MerchantInfo merchantInfo = baseFeignResult.getData();
 
