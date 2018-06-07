@@ -38,8 +38,8 @@ public class DCPEncryptor {
             byte[] aesKeyPlain = DCPRSA.decrypt(keyBytes, selfPrivateKey);
 
             String aesKeyPlainBase64 = Base64.getEncoder().encodeToString(aesKeyPlain);
-            System.out.println("aesKeyPlainBase64:"+aesKeyPlain.length);
-            System.out.println(aesKeyPlainBase64);
+//            System.out.println("aesKeyPlainBase64:"+aesKeyPlain.length);
+//            System.out.println(aesKeyPlainBase64);
 
             //2. AES解开cipher
             byte[] ivBytes = Base64.getDecoder().decode(iv);
@@ -66,7 +66,7 @@ public class DCPEncryptor {
             Map<String,String> map = new HashMap<>();
 
             byte[] aesKey = DCPAES.randomKey(DCPAES.DCPAESSize.DCPAES256);
-            System.out.println("aes key："+Base64.getEncoder().encodeToString(aesKey));
+//            System.out.println("aes key："+Base64.getEncoder().encodeToString(aesKey));
             // 商户公钥 加密key
             byte[] keyEncrypted = DCPRSA.encrypt(aesKey,partnerPublicKey);
             String keyString = Base64.getEncoder().encodeToString(keyEncrypted);
@@ -82,7 +82,7 @@ public class DCPEncryptor {
 
             //平台私钥签名
             String signString = cipherString+keyString+ivString;
-            System.out.println("签名数据:"+signString);
+//            System.out.println("签名数据:"+signString);
             byte[] signByte = DCPRSA.sign(signString.getBytes("UTF-8"),selfPrivateKey, DCPRSA.DCPRSASignAlgorithm.RSA2);
             String signature =  Base64.getEncoder().encodeToString(signByte);
 

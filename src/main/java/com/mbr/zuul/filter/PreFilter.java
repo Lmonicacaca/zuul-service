@@ -48,6 +48,9 @@ public class PreFilter extends ZuulFilter {
     @Value("${default_merchant}")
     private String default_merchant;
 
+    @Value("${channel}")
+    private Long channel;
+
     @Autowired
     private ClientFeign clientFeign;
 
@@ -222,7 +225,7 @@ public class PreFilter extends ZuulFilter {
 
         byte[] headerByte  = Base64.decodeBase64(header);
         String content = new String(headerByte);
-        logger.debug("请求头内容:{}",content);
+        logger.info("请求头内容:{}",content);
 
         Header  h = JSONObject.toJavaObject(JSON.parseObject(content),Header.class);
         HeaderContext.setHeader(h);
@@ -233,14 +236,21 @@ public class PreFilter extends ZuulFilter {
             mapError.put("msg","请求超时");
             return this.setErrorMsg(ctx,mapError);
         }
-        if (h.getDevice().getChannel()!=null) {
-            if (!checkChannel(h.getDevice().getChannel())) {
-                Map<String, Object> mapError = new HashMap<>();
-                mapError.put("code", "501");
-                mapError.put("msg", "Channel 错误");
-                return this.setErrorMsg(ctx, mapError);
-            }
+        if (h.getDevice().getChannel()==null){
+            logger.info("channel 为空==>{}",channel);
+            h.getDevice().setChannel(channel);
         }
+
+        //if (h.getDevice().getChannel()!=null) {
+        if (!checkChannel(h.getDevice().getChannel())) {
+            Map<String, Object> mapError = new HashMap<>();
+            mapError.put("code", "501");
+            mapError.put("msg", "Channel 错误");
+            return this.setErrorMsg(ctx, mapError);
+        }
+        /*}else{
+
+        }*/
 
         return verifySign(charset,ctx,body,h);
     }
