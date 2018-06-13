@@ -242,8 +242,14 @@ public class PreFilter extends ZuulFilter {
             h.getDevice().setChannel(channel);
         }
 
+        if (h.getDevice().getChannel()==null){
+            Map<String, Object> mapError = new HashMap<>();
+            mapError.put("code", "501");
+            mapError.put("msg", "Channel 为空");
+            return this.setErrorMsg(ctx, mapError);
+        }
         //if (h.getDevice().getChannel()!=null) {
-        if (!checkChannel(h.getDevice().getChannel())) {
+        if (!checkChannel(h.getDevice().getChannel(),h.getMerchantId())) {
             Map<String, Object> mapError = new HashMap<>();
             mapError.put("code", "501");
             mapError.put("msg", "Channel 错误");
@@ -256,8 +262,8 @@ public class PreFilter extends ZuulFilter {
         return verifySign(charset,ctx,body,h);
     }
 
-    private boolean checkChannel(Long channel){
-        BaseFeignResult<Channel> baseFeignResult = clientFeign.queryById(channel);
+    private boolean checkChannel(Long channel,Long merchantId){
+        BaseFeignResult<Channel> baseFeignResult = clientFeign.queryById(channel,merchantId);
         if (baseFeignResult.getData()==null){
            return false;
         }else{
@@ -301,7 +307,8 @@ public class PreFilter extends ZuulFilter {
              return this.setErrorMsg(ctx,map);
          }
         // 获取公钥
-         BaseFeignResult<MerchantInfo> baseFeignResult = this.merchantInfoFeign.queryById(h.getMerchantId(),null);
+         BaseFeignResult<MerchantInfo> baseFeignResult = this.merchantInfoFeign.queryById(h.getMerchantId(),h.getDevice().getChannel());
+         logger.info("商户信息->{}",JSONObject.toJSONString(baseFeignResult));
          if (baseFeignResult.getData()!=null) {
              MerchantInfo merchantInfo = baseFeignResult.getData();
 
@@ -311,7 +318,8 @@ public class PreFilter extends ZuulFilter {
              String keyEncrypted = (String)mapBody.get("key");
              String iv = (String)mapBody.get("iv");
              boolean b = DCPEncryptor.verifySignature(h.getSignature(),h.getSignType(),keyEncrypted,iv,cipher,merchantInfo.getRsaPublic());
-            if (b){
+            logger.info("签名验证->{}",b);
+             if (b){
                 return decryptContent(body,ctx,h);
             }else {
                 Map<String,Object> map = new HashMap<>();
