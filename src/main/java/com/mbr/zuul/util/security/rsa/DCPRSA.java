@@ -1,6 +1,7 @@
 package com.mbr.zuul.util.security.rsa;
 
 import javax.crypto.Cipher;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -50,7 +51,7 @@ public class DCPRSA {
      * @throws Exception
      */
     public static PublicKey publicKeyForBase64String(String publicKeyBase64String) throws Exception {
-        byte[] keyBytes = Base64.getDecoder().decode(publicKeyBase64String);
+        byte[] keyBytes = Base64.getDecoder().decode(publicKeyBase64String.getBytes(StandardCharsets.UTF_8));
         return publicKeyForBytes(keyBytes);
     }
 

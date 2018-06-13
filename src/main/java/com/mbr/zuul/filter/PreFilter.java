@@ -15,6 +15,7 @@ import com.mbr.zuul.util.security.DCPEncryptor;
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.http.ServletInputStreamWrapper;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -77,7 +78,7 @@ public class PreFilter extends ZuulFilter {
 
     private Object setErrorMsg( RequestContext ctx ,Map<String,Object> errorMap){
         ctx.setSendZuulResponse(false);
-        ctx.setResponseStatusCode(401);// 返回错误码
+        ctx.setResponseStatusCode(500);// 返回错误码
         String resBody = JSONObject.toJSONString(errorMap);
         HttpServletResponse response = ctx.getResponse();
         response.setHeader("content-type","application/json;charset=utf-8");
@@ -221,7 +222,7 @@ public class PreFilter extends ZuulFilter {
     }
 
     //验证头
-    private Object verifyHeader(String header,RequestContext ctx,String body ){
+    private Object verifyHeader(String header,RequestContext ctx, String body ){
 
         byte[] headerByte  = Base64.decodeBase64(header);
         String content = new String(headerByte);
@@ -241,8 +242,14 @@ public class PreFilter extends ZuulFilter {
             h.getDevice().setChannel(channel);
         }
 
+        if (h.getDevice().getChannel()==null){
+            Map<String, Object> mapError = new HashMap<>();
+            mapError.put("code", "501");
+            mapError.put("msg", "Channel 为空");
+            return this.setErrorMsg(ctx, mapError);
+        }
         //if (h.getDevice().getChannel()!=null) {
-        if (!checkChannel(h.getDevice().getChannel())) {
+        if (!checkChannel(h.getDevice().getChannel(),h.getMerchantId())) {
             Map<String, Object> mapError = new HashMap<>();
             mapError.put("code", "501");
             mapError.put("msg", "Channel 错误");
@@ -255,8 +262,8 @@ public class PreFilter extends ZuulFilter {
         return verifySign(charset,ctx,body,h);
     }
 
-    private boolean checkChannel(Long channel){
-        BaseFeignResult<Channel> baseFeignResult = clientFeign.queryById(channel);
+    private boolean checkChannel(Long channel,Long merchantId){
+        BaseFeignResult<Channel> baseFeignResult = clientFeign.queryById(channel,merchantId);
         if (baseFeignResult.getData()==null){
            return false;
         }else{
@@ -269,7 +276,7 @@ public class PreFilter extends ZuulFilter {
         }
     }
 
-    private Object verifyUrl(Long merchantId,RequestContext ctx,Header h){
+    private Boolean verifyUrl(Long merchantId, RequestContext ctx, Header h){
         HttpServletRequest request = ctx.getRequest();
         String url = request.getRequestURI();
         boolean b = false;
@@ -277,13 +284,7 @@ public class PreFilter extends ZuulFilter {
         if (listBaseFeignResult.getData()!=null&&listBaseFeignResult.getData().size()>0){
             b = true;
         }
-        if (!b){
-            Map<String,Object> map = new HashMap<>();
-            map.put("code","500");
-            map.put("msg","URL 没有访问权限");
-            return this.setErrorMsg(ctx,map);
-        }
-        return null;
+        return b;
     }
 
     private boolean verifyTimeOut(Long timestamp){
@@ -298,9 +299,16 @@ public class PreFilter extends ZuulFilter {
 
      //验证签名
      private Object verifySign(String charset,RequestContext ctx,String body,Header h){
-         verifyUrl(h.getMerchantId(),ctx,h);
+         boolean bv = verifyUrl(h.getMerchantId(),ctx,h);
+         if (!bv){
+             Map<String,Object> map = new HashMap<>();
+             map.put("code","500");
+             map.put("msg","URL 没有访问权限");
+             return this.setErrorMsg(ctx,map);
+         }
         // 获取公钥
-         BaseFeignResult<MerchantInfo> baseFeignResult = this.merchantInfoFeign.queryById(h.getMerchantId(),null);
+         BaseFeignResult<MerchantInfo> baseFeignResult = this.merchantInfoFeign.queryById(h.getMerchantId(),h.getDevice().getChannel());
+         logger.info("商户信息->{}",JSONObject.toJSONString(baseFeignResult));
          if (baseFeignResult.getData()!=null) {
              MerchantInfo merchantInfo = baseFeignResult.getData();
 
@@ -310,8 +318,8 @@ public class PreFilter extends ZuulFilter {
              String keyEncrypted = (String)mapBody.get("key");
              String iv = (String)mapBody.get("iv");
              boolean b = DCPEncryptor.verifySignature(h.getSignature(),h.getSignType(),keyEncrypted,iv,cipher,merchantInfo.getRsaPublic());
-
-            if (b){
+            logger.info("签名验证->{}",b);
+             if (b){
                 return decryptContent(body,ctx,h);
             }else {
                 Map<String,Object> map = new HashMap<>();

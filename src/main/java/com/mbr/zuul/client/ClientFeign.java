@@ -8,10 +8,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-@FeignClient("client-service")
+@FeignClient(value = "client-service")
 public interface ClientFeign {
 
     @RequestMapping(value = "channel/queryById",method = RequestMethod.POST)
     @ResponseBody
-    public BaseFeignResult<Channel> queryById(@RequestParam(value = "id") Long id);
+    public BaseFeignResult<Channel> queryById(@RequestParam(value = "id") Long id,@RequestParam(value = "merchantId") Long merchantId);
 }
