@@ -221,7 +221,7 @@ public class PreFilter extends ZuulFilter {
     }
 
     //验证头
-    private Object verifyHeader(String header,RequestContext ctx,String body ){
+    private Object verifyHeader(String header,RequestContext ctx, String body ){
 
         byte[] headerByte  = Base64.decodeBase64(header);
         String content = new String(headerByte);
