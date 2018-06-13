@@ -29,7 +29,20 @@
 				<spring.debug>false</spring.debug>
 			</properties>
 		</profile>
-
+		<profile>
+			<id>local</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<properties>
+				<spring.profiles.active>local</spring.profiles.active>
+				<eureka.client.service-url.defaultZone>http://eureka:eureka@192.168.1.11:9920/eureka/</eureka.client.service-url.defaultZone>
+				<spring.cloud.config.uri>http://192.168.1.11:9910</spring.cloud.config.uri>
+				<spring.zipkin.base-url>http://47.100.47.200:9949/</spring.zipkin.base-url>
+				<spring.debug>true</spring.debug>
+				<logback.level>INFO</logback.level>
+			</properties>
+		</profile>
 		<profile>
 			<id>dev</id>
 			<properties>
