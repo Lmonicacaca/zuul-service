@@ -16,6 +16,7 @@ import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.http.ServletInputStreamWrapper;
 import com.sun.org.apache.xpath.internal.operations.Bool;
+import com.sun.xml.internal.ws.client.ResponseContext;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -77,28 +78,15 @@ public class PreFilter extends ZuulFilter {
 
 
     private Object setErrorMsg( RequestContext ctx ,Map<String,Object> errorMap){
-        ctx.setSendZuulResponse(false);
-        ctx.setResponseStatusCode(500);// 返回错误码
+
         String resBody = JSONObject.toJSONString(errorMap);
         HttpServletResponse response = ctx.getResponse();
         response.setHeader("content-type","application/json;charset=utf-8");
-
         //加密数据
-        logger.debug("返回明文内容->{}", resBody);
-        Map map = JSONObject.toJavaObject(JSON.parseObject(resBody),Map.class);
-        //APP公钥加密
-        Header header = HeaderContext.getHeader();
-        BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById(header.getMerchantId(),null);
-        MerchantInfo info = merchantInfo.getData();
-        String appPublicKey = info.getRsaPublic();
-        merchantInfo = this.merchantInfoFeign.queryById(Long.parseLong(default_merchant),null);
-        String defaultPrivate = merchantInfo.getData().getRsaPrivate();
-
-        Map<String,String> stringObjectMap = DCPEncryptor.encrypt(resBody,appPublicKey,defaultPrivate);
-        String body = JSONObject.toJSONString(stringObjectMap);
-
-        ctx.setResponseBody(body);// 返回错误内容
-        ctx.set("isSuccess", false);
+        logger.info("返回明文内容->{}", resBody);
+        ctx.setResponseBody(resBody);// 返回错误内容
+       // ctx.set("isSuccess", false);
+        ctx.setSendZuulResponse(false);
         return null;
     }
 

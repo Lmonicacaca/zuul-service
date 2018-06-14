@@ -58,6 +58,7 @@ public class PostFilter  extends ZuulFilter {
         RequestContext context = RequestContext.getCurrentContext();
         HttpServletResponse response = context.getResponse();
         List<Pair<String, String>> list = context.getZuulResponseHeaders();
+
         //获得返回的content-type 判断是不是下载图片
         Boolean b = false;
         logger.info("ResponseHeaders->{}",JSONObject.toJSONString(list));
@@ -94,7 +95,6 @@ public class PostFilter  extends ZuulFilter {
                     context.setResponseBody(resBody);
                 }else {
                     Header header = HeaderContext.getHeader();
-
                     logger.debug("merchantIdString-->{}",header.getMerchantId());
                     BaseFeignResult<MerchantInfo> merchantInfo = this.merchantInfoFeign.queryById(header.getMerchantId(),null);
                     MerchantInfo info = merchantInfo.getData();
@@ -110,7 +110,8 @@ public class PostFilter  extends ZuulFilter {
                     stringMap.put("code",map.get("code").toString());
                     stringMap.put("message",map.get("message").toString());
                     stringMap.put("data",body);
-                    context.setResponseBody(JSONObject.toJSONString(stringMap));
+                    String json = JSONObject.toJSONString(stringMap);
+                    context.setResponseBody(json);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
