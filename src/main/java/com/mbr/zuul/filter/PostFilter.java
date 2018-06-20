@@ -12,6 +12,7 @@ import com.netflix.util.Pair;
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +62,7 @@ public class PostFilter  extends ZuulFilter {
 
         //获得返回的content-type 判断是不是下载图片
         Boolean b = false;
-        logger.info("ResponseHeaders->{}",JSONObject.toJSONString(list));
+        //logger.info("ResponseHeaders->{}",JSONObject.toJSONString(list));
         if(list!=null&&list.size()>0){
             for(Pair p:list){
                 String contentType = String.valueOf(p.second());
@@ -89,7 +90,14 @@ public class PostFilter  extends ZuulFilter {
             try {
                 String resBody = IOUtils.toString(context.getResponseDataStream(), "UTF-8");
                 logger.info("返回明文内容->{}", resBody);
-
+                if (StringUtils.isEmpty(resBody)){
+                    logger.info("resBody==>为空");
+                    Map<String,String> stringMap = new HashMap<>();
+                    stringMap.put("code","500");
+                    stringMap.put("message","请求失败");
+                    String json = JSONObject.toJSONString(stringMap);
+                    context.setResponseBody(json);
+                }
                 Map map = JSONObject.toJavaObject(JSON.parseObject(resBody), Map.class);
                 if (!map.get("code").equals("200")){
                     context.setResponseBody(resBody);

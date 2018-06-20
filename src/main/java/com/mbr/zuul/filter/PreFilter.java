@@ -15,8 +15,6 @@ import com.mbr.zuul.util.security.DCPEncryptor;
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.http.ServletInputStreamWrapper;
-import com.sun.org.apache.xpath.internal.operations.Bool;
-import com.sun.xml.internal.ws.client.ResponseContext;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -187,7 +185,7 @@ public class PreFilter extends ZuulFilter {
         map.put("channel",channelList);
         ctx.setRequestQueryParams(map);
 
-        logger.info("请求头内容:->{}",JSONObject.toJSONString(h));
+        logger.info("封装请求头内容:->{}",JSONObject.toJSONString(h));
 
         logger.info("setRequestQueryParams内容:->{}",JSONObject.toJSONString(ctx.getRequestQueryParams()));
         ctx.setRequest(new HttpServletRequestWrapper(getCurrentContext().getRequest()) {
@@ -214,7 +212,7 @@ public class PreFilter extends ZuulFilter {
 
         byte[] headerByte  = Base64.decodeBase64(header);
         String content = new String(headerByte);
-        logger.info("请求头内容:{}",content);
+        logger.info("Ip地址->{};请求URL->{};请求头内容->{}",CommonsUtil.getIpAddr(ctx.getRequest()),ctx.getRequest().getRequestURI(),content);
 
         Header  h = JSONObject.toJavaObject(JSON.parseObject(content),Header.class);
         HeaderContext.setHeader(h);
@@ -296,7 +294,7 @@ public class PreFilter extends ZuulFilter {
          }
         // 获取公钥
          BaseFeignResult<MerchantInfo> baseFeignResult = this.merchantInfoFeign.queryById(h.getMerchantId(),h.getDevice().getChannel());
-         logger.info("商户信息->{}",JSONObject.toJSONString(baseFeignResult));
+         //logger.info("商户信息->{}",JSONObject.toJSONString(baseFeignResult));
          if (baseFeignResult.getData()!=null) {
              MerchantInfo merchantInfo = baseFeignResult.getData();
 
