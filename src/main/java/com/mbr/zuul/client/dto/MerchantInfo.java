@@ -13,6 +13,16 @@ public class MerchantInfo{
 
     private String rsaPublic;
     private String rsaPrivate;
+//    private int audit;//1 审核通过 0 未审核
+
+
+//    public int getAudit() {
+//        return audit;
+//    }
+//
+//    public void setAudit(int audit) {
+//        this.audit = audit;
+//    }
 
     public String getName() {
         return name;

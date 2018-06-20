@@ -297,7 +297,12 @@ public class PreFilter extends ZuulFilter {
          //logger.info("商户信息->{}",JSONObject.toJSONString(baseFeignResult));
          if (baseFeignResult.getData()!=null) {
              MerchantInfo merchantInfo = baseFeignResult.getData();
-
+//             if (merchantInfo.getAudit()==0){
+//                 Map<String,Object> map = new HashMap<>();
+//                 map.put("code","500");
+//                 map.put("msg","此商户未审核");
+//                 return this.setErrorMsg(ctx,map);
+//             }
              Map mapBody = JSONObject.toJavaObject(JSON.parseObject(body),Map.class);
              // BASE64(cipher)+BASE64(keyEncrypted)+BASE64(iv)
              String cipher = (String)mapBody.get("cipher");
