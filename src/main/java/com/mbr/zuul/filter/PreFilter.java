@@ -293,16 +293,17 @@ public class PreFilter extends ZuulFilter {
              return this.setErrorMsg(ctx,map);
          }
         // 获取公钥
+         logger.info("verifySign getChannel ->{}",h.getDevice().getChannel());
          BaseFeignResult<MerchantInfo> baseFeignResult = this.merchantInfoFeign.queryById(h.getMerchantId(),h.getDevice().getChannel());
-         //logger.info("商户信息->{}",JSONObject.toJSONString(baseFeignResult));
+         logger.info("商户信息->{}",JSONObject.toJSONString(baseFeignResult));
          if (baseFeignResult.getData()!=null) {
              MerchantInfo merchantInfo = baseFeignResult.getData();
-//             if (merchantInfo.getAudit()==0){
-//                 Map<String,Object> map = new HashMap<>();
-//                 map.put("code","500");
-//                 map.put("msg","此商户未审核");
-//                 return this.setErrorMsg(ctx,map);
-//             }
+             if (merchantInfo.getAudit()==0){
+                 Map<String,Object> map = new HashMap<>();
+                 map.put("code","500");
+                 map.put("msg","此商户未审核");
+                 return this.setErrorMsg(ctx,map);
+             }
              Map mapBody = JSONObject.toJavaObject(JSON.parseObject(body),Map.class);
              // BASE64(cipher)+BASE64(keyEncrypted)+BASE64(iv)
              String cipher = (String)mapBody.get("cipher");
@@ -320,7 +321,10 @@ public class PreFilter extends ZuulFilter {
             }
 
          }else {
-             return  null;
+             Map<String,Object> map = new HashMap<>();
+             map.put("code","500");
+             map.put("msg","商户不存在");
+             return this.setErrorMsg(ctx,map);
          }
 
     }
