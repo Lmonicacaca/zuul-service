@@ -1,9 +1,16 @@
-
 eureka:
+  should-use-dns: false
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
+    metadata-map:
+      zone: ${spring.profiles.active}
+  region: mbr
+  mbr:
+    availability-zones: ${spring.profiles.active}
   client:
+    register-with-eureka: true
+    prefer-same-zone-eureka: true
     service-url:
       defaultZone: @eureka.client.service-url.defaultZone@
 
@@ -12,7 +19,7 @@ spring:
       name: zuul-service
   cloud:
     config:
-      profile: @spring.profiles.active@
+      #profile: @spring.profiles.active@
       label: master
       uri: ${SPRING_CONFIG_URI:@spring.cloud.config.uri@}
   zipkin:
