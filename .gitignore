@@ -4,30 +4,27 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+*.iml
 .idea
 .gradle
 .gradletasknamecache
 build/
 classes/
 /out/
+*/out/
+*/logs/
 .idea_modules/
 target/
 dump.rdb
 gradle/wrapper/
 .classpath
 .project
-settings/
+.settings
 gradlew*
 bin/
-core/bin
-service/bin
-webapp/logs/
 logs/
-core/.gitignore
-persist/.gitignore
-service/.gitignore
-webapp/.gitignore
-crawler/.gitignore
 *.tgz
 .cache-main
 .cache-test
+.settings/*
+whale-components/generated
