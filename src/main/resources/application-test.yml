@@ -1,8 +1,0 @@
-server:
-  port: 9900
-  tomcat:
-    accept-count: 1000
-    max-threads: 1000
-    max-connections: 1000
-
-
