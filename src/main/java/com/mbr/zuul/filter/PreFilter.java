@@ -99,6 +99,16 @@ public class PreFilter extends ZuulFilter {
         HttpServletRequest request = ctx.getRequest();
         String regexJson = "^application/json.*";
         String contentType = request.getContentType();
+
+        String header = request.getHeader("token");
+        Header h = null;
+        if(StringUtils.isNotEmpty(header)) {
+            byte[] headerByte = Base64.decodeBase64(header);
+            String content = new String(headerByte);
+            logger.info("Ip地址->{};请求URL->{};请求头内容->{}", CommonsUtil.getIpAddr(ctx.getRequest()), ctx.getRequest().getRequestURI(), content);
+            h = JSONObject.toJavaObject(JSON.parseObject(content), Header.class);
+            HeaderContext.setHeader(h);
+        }
         if(StringUtils.isEmpty(contentType)){
             ctx.setSendZuulResponse(true);
             return null;
@@ -111,8 +121,15 @@ public class PreFilter extends ZuulFilter {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            String header = request.getHeader("token");
-            return verifyHeader(header, ctx, body);
+            if (h!=null){
+                return verifyHeader(h, ctx, body);
+            }else {
+                Map<String,Object> map = new HashMap<>();
+                map.put("code","500");
+                map.put("msg","token 为空");
+                return this.setErrorMsg(ctx,map);
+            }
+
         }else{
             Map<String,Object> map = new HashMap<>();
             map.put("code","500");
@@ -208,14 +225,8 @@ public class PreFilter extends ZuulFilter {
     }
 
     //验证头
-    private Object verifyHeader(String header,RequestContext ctx, String body ){
+    private Object verifyHeader(Header h,RequestContext ctx, String body ){
 
-        byte[] headerByte  = Base64.decodeBase64(header);
-        String content = new String(headerByte);
-        logger.info("Ip地址->{};请求URL->{};请求头内容->{}",CommonsUtil.getIpAddr(ctx.getRequest()),ctx.getRequest().getRequestURI(),content);
-
-        Header  h = JSONObject.toJavaObject(JSON.parseObject(content),Header.class);
-        HeaderContext.setHeader(h);
         boolean b = verifyTimeOut( h.getTimestamp());
         if (!b){
             Map<String,Object> mapError = new HashMap<>();

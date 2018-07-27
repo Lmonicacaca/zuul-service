@@ -5,7 +5,7 @@ public class Device {
     private String pushId;
     private String deviceId;
     private String appVersion;
-    private String system;// Android IOS
+    private String system;// Android IOS H5
     private String language;//zh_CN、zh_TW、en_US、ja-JP、ko-KR
     private String packageName; // app 包名  此包名必须和jpush 设置一样
     private Long channel;
