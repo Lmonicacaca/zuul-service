@@ -1,6 +1,6 @@
 spring:
   application:
-    name: zuul-service
+    #name: zuul-service
   profiles:
     #active: @spring.profiles.active@
   debug: @spring.debug@
