@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-@FeignClient(value = "pay-client-${spring.profiles.active}")
+@FeignClient(value = "client-service")
 public interface ClientFeign {
 
     @RequestMapping(value = "channel/queryById",method = RequestMethod.POST)
