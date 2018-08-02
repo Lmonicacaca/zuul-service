@@ -15,16 +15,15 @@ eureka:
       defaultZone: @eureka.client.service-url.defaultZone@
 
 spring:
-  application:
-      name: zuul-service
   cloud:
     config:
-      #profile: @spring.profiles.active@
+      profile: ${spring.profiles.active}
       label: master
       uri: ${SPRING_CONFIG_URI:@spring.cloud.config.uri@}
+  application:
+    name: @spring.service.name@-${spring.profiles.active}
   zipkin:
     base-url: @spring.zipkin.base-url@
-
 
 
 

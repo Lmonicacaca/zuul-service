@@ -18,12 +18,16 @@
     </parent>
 
     <properties>
+        <spring.service.name>pay-zuul</spring.service.name>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <spring-cloud.version>Edgware.RELEASE</spring-cloud.version>
+        <jjwt.version>0.6.0</jjwt.version>
         <java.version>1.8</java.version>
-        <eureka.client.service-url.defaultZone>http://eureka:eureka@192.168.1.29:8102/eureka/
+        <eureka.client.service-url.defaultZone>
+            <![CDATA[http://eureka:eureka@192.168.1.29:9902/eureka,http://eureka:eureka@192.168.1.29:9901/eureka]]>
         </eureka.client.service-url.defaultZone>
-        <spring.cloud.config.uri>http://192.168.1.29:8100</spring.cloud.config.uri>
+        <spring.cloud.config.uri>http://192.168.1.29:9900</spring.cloud.config.uri>
         <spring.zipkin.base-url>http://47.100.47.200:9949/</spring.zipkin.base-url>
         <spring.debug>false</spring.debug>
         <logback.level>INFO</logback.level>
