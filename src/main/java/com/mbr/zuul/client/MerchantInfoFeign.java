@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import javax.validation.Valid;
 import java.util.List;
 
-@FeignClient(value = "merchant-service")
+@FeignClient(value = "pay-merchant-${spring.profiles.active}")
 public interface MerchantInfoFeign {
 
 
