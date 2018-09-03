@@ -15,6 +15,8 @@ eureka:
       defaultZone: @eureka.client.service-url.defaultZone@
 
 spring:
+  profiles:
+    active: @spring.profiles.active@
   cloud:
     config:
       profile: ${spring.profiles.active}

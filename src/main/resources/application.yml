@@ -1,8 +1,4 @@
 spring:
-  application:
-    #name: zuul-service
-  profiles:
-    #active: @spring.profiles.active@
   debug: @spring.debug@
   freemarker:
     check-template-location: true
@@ -17,5 +13,5 @@ spring:
       number_format: '0.##' #数字格式化，无小数点
 
 server:
-    port: 8100
+    port: 8200
     tomcat.uri-encoding: UTF-8
