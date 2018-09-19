@@ -97,6 +97,12 @@ public class PreFilter extends ZuulFilter {
 
         RequestContext ctx = getCurrentContext();
         HttpServletRequest request = ctx.getRequest();
+        String encrypt = request.getHeader("encrypt");
+        if(StringUtils.isNotEmpty(encrypt)&&encrypt.equals("0")){
+            ctx.setSendZuulResponse(true);
+            return null;
+        }
+
         String regexJson = "^application/json.*";
         String contentType = request.getContentType();
 

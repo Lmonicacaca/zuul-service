@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.rmi.MarshalledObject;
 import java.util.*;
@@ -59,66 +60,72 @@ public class PostFilter  extends ZuulFilter {
     public Object run() {
         RequestContext context = RequestContext.getCurrentContext();
         HttpServletResponse response = context.getResponse();
-        List<Pair<String, String>> list = context.getZuulResponseHeaders();
+        HttpServletRequest request = context.getRequest();
+        String encrypt = request.getHeader("encrypt");
+        if(StringUtils.isNotEmpty(encrypt)&&encrypt.equals("0")){
+            //TODO 不加密处理
+        }else {
+            List<Pair<String, String>> list = context.getZuulResponseHeaders();
 
-        //获得返回的content-type 判断是不是下载图片
-        Boolean b = false;
-        //logger.info("ResponseHeaders->{}",JSONObject.toJSONString(list));
-        if(list!=null&&list.size()>0){
-            for(Pair p:list){
-                String contentType = String.valueOf(p.second());
-                String regexJson = "^application/json.*";
-                if(contentType.matches(regexJson)){
-                    b = true;
-                    break;
-                }
-            }
-        }
-        if(list!=null&&list.size()>0){
-            for(Pair p:list){
-                String contentLength = (String)p.first();
-                //String contentLength = String.valueOf(p.second());
-                String regexJson = "^Cache-Control.*";
-                if(contentLength.matches(regexJson)){
-                   response.setHeader("Content-Length",(String)p.second());
-                    break;
-                }
-            }
-        }
-
-        if(b) {
-            response.setHeader("content-type", "application/json;charset=utf-8");
-            try {
-                String resBody = IOUtils.toString(context.getResponseDataStream(), "UTF-8");
-                logger.info("返回明文内容->{}", resBody);
-                if (StringUtils.isEmpty(resBody)){
-                    logger.info("resBody==>为空");
-                    Map<String,String> stringMap = new HashMap<>();
-                    stringMap.put("code","500");
-                    stringMap.put("message","请求失败");
-                    String json = JSONObject.toJSONString(stringMap);
-                    context.setResponseBody(json);
-                }
-                Map map = JSONObject.toJavaObject(JSON.parseObject(resBody), Map.class);
-                if (!map.get("code").equals("200")){
-                    context.setResponseBody(resBody);
-                }else {
-                    Header header = HeaderContext.getHeader();
-                    String json;
-                    if (StringUtils.isEmpty(header.getDevice().getSystem())){
-                        json = body(header,map,resBody);
-                    }else if (!header.getDevice().getSystem().equals("H5")){
-                        json = body(header,map,resBody);
-                    }else {
-                        json = resBody;
+            //获得返回的content-type 判断是不是下载图片
+            Boolean b = false;
+            //logger.info("ResponseHeaders->{}",JSONObject.toJSONString(list));
+            if (list != null && list.size() > 0) {
+                for (Pair p : list) {
+                    String contentType = String.valueOf(p.second());
+                    String regexJson = "^application/json.*";
+                    if (contentType.matches(regexJson)) {
+                        b = true;
+                        break;
                     }
-                    context.setResponseBody(json);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                logger.error(e.getMessage());
-            }finally {
-                HeaderContext.removeHeader();
+            }
+            if (list != null && list.size() > 0) {
+                for (Pair p : list) {
+                    String contentLength = (String) p.first();
+                    //String contentLength = String.valueOf(p.second());
+                    String regexJson = "^Cache-Control.*";
+                    if (contentLength.matches(regexJson)) {
+                        response.setHeader("Content-Length", (String) p.second());
+                        break;
+                    }
+                }
+            }
+
+            if (b) {
+                response.setHeader("content-type", "application/json;charset=utf-8");
+                try {
+                    String resBody = IOUtils.toString(context.getResponseDataStream(), "UTF-8");
+                    logger.info("返回明文内容->{}", resBody);
+                    if (StringUtils.isEmpty(resBody)) {
+                        logger.info("resBody==>为空");
+                        Map<String, String> stringMap = new HashMap<>();
+                        stringMap.put("code", "500");
+                        stringMap.put("message", "请求失败");
+                        String json = JSONObject.toJSONString(stringMap);
+                        context.setResponseBody(json);
+                    }
+                    Map map = JSONObject.toJavaObject(JSON.parseObject(resBody), Map.class);
+                    if (!map.get("code").equals("200")) {
+                        context.setResponseBody(resBody);
+                    } else {
+                        Header header = HeaderContext.getHeader();
+                        String json;
+                        if (StringUtils.isEmpty(header.getDevice().getSystem())) {
+                            json = body(header, map, resBody);
+                        } else if (!header.getDevice().getSystem().equals("H5")) {
+                            json = body(header, map, resBody);
+                        } else {
+                            json = resBody;
+                        }
+                        context.setResponseBody(json);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    logger.error(e.getMessage());
+                } finally {
+                    HeaderContext.removeHeader();
+                }
             }
         }
         return null;
