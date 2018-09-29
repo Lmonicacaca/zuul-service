@@ -16,7 +16,7 @@ eureka:
 
 spring:
   profiles:
-    active: @spring.profiles.active@
+    active: ${spring.profiles.active}
   cloud:
     config:
       profile: ${spring.profiles.active}
